@@ -1,8 +1,59 @@
+# Environment & Secrets
 .env
+.env.local
+.env.*.local
+
+# Database
 *.db
 *.bak
 *.bak2
+
+# Logs
 log.txt
+*.log
+logs/
+
+# Media
 recordings/
+
+# Python
 __pycache__/
 *.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+*.egg
+.Python
+venv/
+env/
+ENV/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Testing
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+.tox/
+
+# IDE & Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+*.sublime-project
+*.sublime-workspace
+.DS_Store
+*.sublime-*
+.editorconfig.local
+
+# Pre-commit
+.pre-commit-config.yaml.local
+
+# Build
+.mypy_cache/
+.dmypy.json
+dmypy.json

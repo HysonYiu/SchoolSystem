@@ -2,8 +2,10 @@
 agent.py — SchoolSystem AI Agent Engine
 OrchestratorAgent + SubAgents with full system context
 """
-import os, sqlite3, json
-from datetime import datetime, date, timedelta
+import json
+import os
+import sqlite3
+from datetime import date, datetime, timedelta
 
 DB_PATH     = os.path.join(os.path.dirname(os.path.abspath(__file__)), "schoolsystem.db")
 DEEPSEEK_KEY = os.getenv("DEEPSEEK_API_KEY", "")

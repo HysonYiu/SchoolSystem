@@ -1,6 +1,11 @@
-import os, asyncio, sqlite3, threading
-from datetime import datetime, date, timedelta
+import asyncio
+import os
+import sqlite3
+import threading
+from datetime import date, datetime, timedelta
+
 from dotenv import load_dotenv
+import discord
 
 load_dotenv()
 
@@ -22,9 +27,8 @@ CH_EXAM     = _safe_int("DISCORD_CH_EXAM")
 USER_ID     = _safe_int("DISCORD_USER_ID")
 DB_PATH     = os.path.join(os.path.dirname(os.path.abspath(__file__)), "schoolsystem.db")
 DEEPSEEK_KEY = os.getenv("DEEPSEEK_API_KEY", "")
-REMIND_TIME = os.getenv("DAILY_REMINDER_TIME","07:30")
+REMIND_TIME = os.getenv("DAILY_REMINDER_TIME", "07:30")
 
-import discord
 from discord import app_commands
 from discord.ext import tasks
 

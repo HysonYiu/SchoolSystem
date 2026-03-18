@@ -3,10 +3,14 @@ Study Plan Generator
 優先級：考試日期 + 空堂 + 假期 + 功課量
 平日 18:00 後，假期全日
 """
-import os, json, sqlite3
+import json
+import os
+import sqlite3
 from datetime import date, datetime, timedelta
+
 from dotenv import load_dotenv
-from timetable import TIMETABLE, ALL_NO_SCHOOL, get_cycle_day, is_school_day
+
+from timetable import ALL_NO_SCHOOL, TIMETABLE, get_cycle_day, is_school_day
 
 load_dotenv()
 
