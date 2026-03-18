@@ -1,6 +1,8 @@
-import os, sqlite3
+import os
+import sqlite3
 from datetime import datetime
-from flask import Blueprint, request, jsonify, send_file
+
+from flask import Blueprint, jsonify, request, send_file
 
 recording_bp = Blueprint("recording", __name__)
 
