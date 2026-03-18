@@ -4,7 +4,7 @@ from flask import Flask, request, jsonify, g, Response, make_response, redirect
 from dotenv import load_dotenv
 
 load_dotenv()
-__version__ = "1.3.8"
+__version__ = "2.0.0"
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 100 * 1024 * 1024  # 100 MB for audio uploads
@@ -327,21 +327,29 @@ def ai_ask():
 @app.route("/api/ai/study_plan", methods=["POST"])
 def ai_study_plan():
     if not auth(request): return jsonify({"error":"unauthorized"}),401
-    if not DEEPSEEK_KEY: return jsonify({"error":"no_key"}),503
-    db = get_db()
-    hw = db.execute("SELECT title,subject,due_date,priority,hw_type FROM homeworks WHERE done=0 ORDER BY due_date ASC").fetchall()
-    exams = db.execute("SELECT subject,title,exam_date,scope FROM exams WHERE exam_date>=date('now') ORDER BY exam_date ASC").fetchall()
-    get_cycle_day, _, _ = _get_cycle_and_school()
-    prompt = f"今日{date.today()}，Cycle Day {get_cycle_day()}。未完成功課：{json.dumps([dict(h) for h in hw],ensure_ascii=False)}。即將考試：{json.dumps([dict(e) for e in exams],ensure_ascii=False)}。平日18:00後溫書。請生成今晚溫書計劃，列優先順序同時間，用廣東話，格式清晰。"
+    if not DEEPSEEK_KEY: return jsonify({"error":"no_key","msg":"請在管理員介面設定 DEEPSEEK_API_KEY"}),503
+    d = request.get_json() or {}
+    focus_days = int(d.get("days", 3))
     try:
-        import urllib.request as urlreq
-        payload = json.dumps({"model":"deepseek-reasoner","max_tokens":600,"messages":[{"role":"user","content":prompt}]}).encode()
-        req = urlreq.Request("https://api.deepseek.com/chat/completions",data=payload,
-            headers={"Content-Type":"application/json","Authorization":f"Bearer {DEEPSEEK_KEY}"},method="POST")
-        with urlreq.urlopen(req,timeout=30) as r:
-            result = json.loads(r.read())
-        return jsonify({"ok":True,"plan":result["choices"][0]["message"]["content"]})
-    except Exception as e: return jsonify({"error":str(e)}),500
+        from study_plan import generate_study_plan
+        result = generate_study_plan(focus_days=focus_days)
+        if result.get("error") == "no_key":
+            return jsonify({"error":"no_key"}),503
+        if result.get("error"):
+            return jsonify({"error":result["error"]}),500
+        return jsonify({"ok":True,"plan":result["plan"],"context":result.get("context",{})})
+    except Exception as e:
+        return jsonify({"error":str(e)}),500
+
+@app.route("/api/study/priorities")
+def study_priorities():
+    """今日優先事項 (不用 AI Key)"""
+    if not auth(request): return jsonify({"error":"unauthorized"}),401
+    try:
+        from study_plan import get_today_priorities
+        return jsonify(get_today_priorities())
+    except Exception as e:
+        return jsonify({"error":str(e)}),500
 
 # ── Logs ──────────────────────────────────────────────────────────────────────
 

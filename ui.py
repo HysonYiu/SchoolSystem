@@ -344,15 +344,42 @@ select.fctl option{background:var(--bg3)}
   <div class="section" id="s-ai">
     <div class="ptitle">AI 助手</div>
     <div class="psub">DeepSeek Reasoner 驅動</div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">
+
+    <!-- Today priorities card (no AI key needed) -->
+    <div class="card" id="ai-priorities-card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div style="font-size:15px;font-weight:600">⚡ 今日優先事項</div>
+        <button onclick="loadPriorities()" style="background:var(--bg4);border:none;color:var(--text2);padding:5px 12px;border-radius:10px;cursor:pointer;font-size:12px;font-family:inherit">刷新</button>
+      </div>
+      <div id="ai-priorities"><div class="empty"><div class="empt">載入中...</div></div></div>
+    </div>
+
+    <!-- Study plan generator -->
+    <div class="card">
+      <div style="font-size:15px;font-weight:600;margin-bottom:12px">📅 AI 溫書計劃</div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+        <button class="aichip" onclick="aiStudyPlan(1)">今晚</button>
+        <button class="aichip" onclick="aiStudyPlan(3)">3日計劃</button>
+        <button class="aichip" onclick="aiStudyPlan(7)">1週計劃</button>
+      </div>
+      <div id="study-plan-result" style="display:none">
+        <div style="background:var(--bg4);border-radius:var(--rsm);padding:14px;font-size:14px;line-height:1.7;white-space:pre-wrap;color:var(--text)" id="study-plan-text"></div>
+      </div>
+      <div id="study-plan-loading" style="display:none;text-align:center;color:var(--text2);font-size:13px;padding:20px">⏳ AI 思考中，請稍等...</div>
+    </div>
+
+    <!-- Quick chips -->
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
       <button class="aichip" onclick="aiQ('今日有咩功課？')">📋 今日功課</button>
-      <button class="aichip" onclick="aiStudyPlan()">📅 溫書計劃</button>
       <button class="aichip" onclick="aiQ('哪科功課最緊急？')">⚡ 最緊急</button>
       <button class="aichip" onclick="aiQ('考試前溫書建議')">🎯 考試建議</button>
+      <button class="aichip" onclick="aiQ('有咩空堂可以做功課？')">🕐 空堂</button>
     </div>
+
+    <!-- Chat -->
     <div class="aibox" id="ai-chat"></div>
     <div class="airow">
-      <input class="aiinput" id="ai-input" placeholder="問 AI..." onkeydown="if(event.key==='Enter')sendAI()">
+      <input class="aiinput" id="ai-input" placeholder="問 AI 任何問題..." onkeydown="if(event.key==='Enter')sendAI()">
       <button class="aisend" onclick="sendAI()">送出</button>
     </div>
     <div id="ai-status" style="font-size:12px;color:var(--text3);text-align:center;margin-top:6px"></div>
@@ -388,7 +415,7 @@ function go(t,el){
   else if(t==='exam'){loadExams();examSeg('list');}
   else if(t==='stats')loadStats();
   else if(t==='rec')loadRecList();
-  else if(t==='ai'){}
+  else if(t==='ai'){loadPriorities();}
 }
 function goB(t,el){
   document.querySelectorAll('.bt').forEach(b=>b.classList.remove('on'));
@@ -636,6 +663,63 @@ async function delRec(id){
 
 // ── AI ─────────────────────────────────────────────────────────────────────────
 function aiQ(q){$('ai-input').value=q;sendAI();}
+
+async function loadPriorities(){
+  const el=$('ai-priorities');
+  try{
+    const r=await api('/api/study/priorities');
+    if(r.error){el.innerHTML='<div class="empty"><div class="empt">載入失敗</div></div>';return;}
+    let html='';
+    if(r.urgent&&r.urgent.length){
+      html+='<div style="margin-bottom:10px"><div style="font-size:12px;font-weight:600;color:var(--danger);margin-bottom:6px">🔴 今日截止</div>';
+      html+=r.urgent.map(h=>'<div class="hwr" style="border-radius:8px;margin-bottom:4px">'+sb(h.subject)+'<div class="hwb"><div class="hwn">'+h.title+'</div></div></div>').join('');
+      html+='</div>';
+    }
+    if(r.due_tomorrow&&r.due_tomorrow.length){
+      html+='<div style="margin-bottom:10px"><div style="font-size:12px;font-weight:600;color:var(--warn);margin-bottom:6px">🟡 明日截止</div>';
+      html+=r.due_tomorrow.map(h=>'<div class="hwr" style="border-radius:8px;margin-bottom:4px">'+sb(h.subject)+'<div class="hwb"><div class="hwn">'+h.title+'</div></div></div>').join('');
+      html+='</div>';
+    }
+    if(r.exams_soon&&r.exams_soon.length){
+      html+='<div style="margin-bottom:10px"><div style="font-size:12px;font-weight:600;color:var(--danger);margin-bottom:6px">📅 7日內考試</div>';
+      html+=r.exams_soon.map(e=>'<div style="display:flex;align-items:center;gap:8px;padding:8px;background:var(--bg4);border-radius:8px;margin-bottom:4px">'+sb(e.subject)+'<span style="font-size:13px;flex:1">'+(e.title||e.subject+'考試')+'</span><span style="font-size:12px;color:var(--danger)">'+Math.round(e.days_left||0)+'天後</span></div>').join('');
+      html+='</div>';
+    }
+    if(r.free_periods&&r.free_periods.length){
+      html+='<div style="font-size:12px;color:var(--text2)">🕐 今日空堂：'+r.free_periods.map(p=>p.type+' '+p.start+'-'+p.end).join('、')+'</div>';
+    }
+    if(!r.urgent?.length&&!r.due_tomorrow?.length&&!r.exams_soon?.length){
+      html='<div class="empty"><div class="empi">🎉</div><div class="empt">近期無緊急功課</div></div>';
+    }
+    el.innerHTML=html;
+  }catch(e){el.innerHTML='<div class="empty"><div class="empt">載入失敗</div></div>';}
+}
+
+async function aiStudyPlan(days=3){
+  const result=$('study-plan-result');
+  const loading=$('study-plan-loading');
+  const text=$('study-plan-text');
+  result.style.display='none';
+  loading.style.display='block';
+  try{
+    const r=await api('/api/ai/study_plan',{method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({days})});
+    loading.style.display='none';
+    if(r.error==='no_key'){
+      text.textContent='⚠️ 請先在管理員介面設定 DEEPSEEK_API_KEY';
+    }else if(r.ok){
+      text.textContent=r.plan;
+    }else{
+      text.textContent='❌ '+(r.error||'未知錯誤');
+    }
+    result.style.display='block';
+  }catch(e){
+    loading.style.display='none';
+    text.textContent='❌ '+e.message;
+    result.style.display='block';
+  }
+}
 async function aiStudyPlan(){
   const chat=$('ai-chat');
   const msg=document.createElement('div');msg.className='aimsg bot loading';msg.textContent='⏳ 生成中...';
