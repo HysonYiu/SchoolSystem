@@ -582,6 +582,7 @@ async function delExam(id){
 // ── Whiteboard ────────────────────────────────────────────────────────────────
 async function handleWB(input){
   const file=input.files[0];if(!file)return;
+  // Show image preview immediately
   const url=URL.createObjectURL(file);
   $('wb-img').src=url;$('wb-preview').style.display='block';
   $('wb-results').innerHTML='';
@@ -590,27 +591,65 @@ async function handleWB(input){
   try{
     const r=await fetch('/api/whiteboard/upload?key='+KEY,{method:'POST',body:fd}).then(x=>x.json());
     if(!r.ok){$('wb-status').textContent='❌ 上載失敗：'+(r.error||'');return;}
+
+    let html='';
+
+    // AI results
     if(r.homeworks&&r.homeworks.length>0){
       $('wb-status').textContent='✅ AI 識別到 '+r.homeworks.length+' 項功課，撳加入：';
-      $('wb-results').innerHTML=r.homeworks.map((h,i)=>
-        '<div class="wb-hw" onclick="addWBHW('+i+','+JSON.stringify(r.homeworks).replace(/</g,'&lt;').replace(/"/g,'&quot;')+')" >'+
-        '<div class="wb-hw-title">'+(h.title||'（未識別標題）')+'</div>'+
-        '<div class="wb-hw-meta">'+sb(h.subject||'CHI')+(h.due_date?' · '+h.due_date:'')+'</div></div>'
-      ).join('');
-    }else if(r.raw){
-      $('wb-status').textContent='AI 回覆：';
-      $('wb-results').innerHTML='<div style="font-size:13px;color:var(--text2);padding:10px;background:var(--bg4);border-radius:8px;white-space:pre-wrap">'+r.raw+'</div>';
+      html+=r.homeworks.map((h,i)=>{
+        const hj=encodeURIComponent(JSON.stringify(h));
+        return'<div class="wb-hw" onclick="addWBHWOne(''+hj+'')">'+
+          '<div style="display:flex;align-items:center;gap:8px">'+sb(h.subject||'CHI')+
+          '<div><div class="wb-hw-title">'+(h.title||'未識別標題')+'</div>'+
+          (h.due_date?'<div class="wb-hw-meta">截止：'+h.due_date+'</div>':'')+
+          '</div></div></div>';
+      }).join('');
+    }else if(r.ai_note){
+      $('wb-status').textContent='📷 圖片已儲存 · '+r.ai_note;
+    }else if(r.ai_errors){
+      $('wb-status').textContent='⚠️ AI 識別失敗，請手動輸入';
     }else{
-      $('wb-status').textContent='✅ 圖片已儲存（需要設定 AI Key 才能自動識別）';
+      $('wb-status').textContent='📷 圖片已儲存';
     }
+
+    // Always show manual entry form
+    html+='<div style="margin-top:14px;padding:14px;background:var(--bg4);border-radius:var(--rsm)">'+
+      '<div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:10px">✏️ 手動加入功課</div>'+
+      '<div style="display:flex;gap:8px;margin-bottom:8px">'+
+        '<select id="wb-subj" style="flex:1;background:var(--bg3);border:none;color:var(--text);padding:9px;border-radius:8px;font-family:inherit;font-size:14px;outline:none">'+
+          '<option>CHEM</option><option>MATH</option><option>M2</option><option>ENG</option>'+
+          '<option>CHI</option><option>ICT</option><option>LS</option><option>LIFE-ED</option>'+
+        '</select>'+
+        '<input id="wb-due" type="date" style="flex:1;background:var(--bg3);border:none;color:var(--text);padding:9px;border-radius:8px;font-family:inherit;font-size:14px;outline:none">'+
+      '</div>'+
+      '<input id="wb-title" placeholder="功課描述" style="width:100%;background:var(--bg3);border:none;color:var(--text);padding:10px;border-radius:8px;font-family:inherit;font-size:14px;outline:none;margin-bottom:8px">'+
+      '<button onclick="addWBManual()" style="width:100%;padding:12px;border-radius:8px;border:none;background:var(--blue);color:#fff;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit">加入功課表</button>'+
+    '</div>';
+
+    $('wb-results').innerHTML=html;
   }catch(e){$('wb-status').textContent='❌ '+e.message;}
   input.value='';
 }
-async function addWBHW(idx,hws){
-  const h=hws[idx];
+
+async function addWBHWOne(hj){
+  const h=JSON.parse(decodeURIComponent(hj));
   await api('/api/hw',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({title:h.title||'白板功課',subject:h.subject||'CHI',due_date:h.due_date||'',source:'白板拍照',priority:'中'})});
-  toast('📥 已加入：'+( h.title||'白板功課'));
+    body:JSON.stringify({title:h.title||'白板功課',subject:h.subject||'CHI',
+      due_date:h.due_date||'',source:'白板拍照',priority:'中'})});
+  toast('📥 已加入：'+(h.title||'白板功課'));
+}
+
+async function addWBManual(){
+  const title=$('wb-title')?.value.trim();
+  if(!title){toast('⚠️ 請輸入功課描述');return;}
+  const subj=$('wb-subj')?.value||'CHI';
+  const due=$('wb-due')?.value||'';
+  await api('/api/hw',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({title,subject:subj,due_date:due,source:'白板拍照',priority:'中'})});
+  toast('📥 已加入：'+title);
+  if($('wb-title'))$('wb-title').value='';
+  if($('wb-due'))$('wb-due').value='';
 }
 
 // ── Recording ─────────────────────────────────────────────────────────────────

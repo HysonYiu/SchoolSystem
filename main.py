@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 from flask import Flask, Response, g, jsonify, make_response, redirect, request
 
 load_dotenv()
-__version__ = "2.0.0-alpha.2"
+__version__ = "2.0.0-alpha.3"
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 100 * 1024 * 1024  # 100 MB for audio uploads
@@ -866,43 +866,87 @@ def whiteboard_upload():
         return jsonify({"error":"no file"}),400
     f = request.files["file"]
     import base64
-    img_data = base64.b64encode(f.read()).decode()
-    ext = "jpeg"
-    if f.filename.lower().endswith(".png"): ext = "png"
-    elif f.filename.lower().endswith(".heic"): ext = "heic"
+    raw_bytes = f.read()
+    img_data = base64.b64encode(raw_bytes).decode()
+
+    # Always use jpeg for data URL (HEIC/HEIF not supported in browsers)
+    fname_lower = (f.filename or "").lower()
+    if fname_lower.endswith(".png"):
+        ext = "png"
+        mime = "image/png"
+    else:
+        ext = "jpg"
+        mime = "image/jpeg"
+
+    # Save to disk
     wb_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "whiteboards")
     os.makedirs(wb_dir, exist_ok=True)
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     fpath = os.path.join(wb_dir, f"{ts}.{ext}")
     with open(fpath, "wb") as out:
-        out.write(base64.b64decode(img_data))
-    result = {"ok":True,"filename":f"{ts}.{ext}","b64":img_data,"ext":ext}
+        out.write(raw_bytes)
+
+    result = {
+        "ok": True,
+        "filename": f"{ts}.{ext}",
+        "ext": ext,
+        "has_ai": bool(DEEPSEEK_KEY),
+        "homeworks": [],
+    }
+
+    # AI recognition — try vision models in order
     if DEEPSEEK_KEY:
-        try:
-            import urllib.request as urlreq, json as _json
-            payload = _json.dumps({"model":"deepseek-chat","max_tokens":600,
-                "messages":[{"role":"user","content":[
-                    {"type":"text","text":'呢張係香港中學白板嘅功課記錄，請提取所有功課項目，每項包括：科目、功課描述、截止日期（如有）。用JSON格式回覆，格式：{"homeworks":[{"subject":"","title":"","due_date":""}]}。如果睇唔清就返回空list。'},
-                    {"type":"image_url","image_url":{"url":f"data:image/{ext};base64,{img_data}"}}
-                ]}]}).encode()
-            req = urlreq.Request("https://api.deepseek.com/chat/completions",
-                data=payload,
-                headers={"Content-Type":"application/json","Authorization":f"Bearer {DEEPSEEK_KEY}"},
-                method="POST")
-            with urlreq.urlopen(req, timeout=30) as r:
-                resp = _json.loads(r.read())
-            text = resp["choices"][0]["message"]["content"]
+        import urllib.request as urlreq, json as _json, re as _re
+        # DeepSeek vision models to try
+        vision_models = ["deepseek-vl2", "deepseek-vl", "deepseek-chat"]
+        ai_success = False
+        for model in vision_models:
             try:
-                import re as _re
+                payload = _json.dumps({
+                    "model": model,
+                    "max_tokens": 800,
+                    "messages": [{
+                        "role": "user",
+                        "content": [
+                            {"type": "image_url", "image_url": {
+                                "url": f"data:{mime};base64,{img_data}"
+                            }},
+                            {"type": "text", "text": (
+                                "呢張係香港中學白板嘅功課記錄，請提取所有功課項目。"
+                                "每項包括：科目(CHEM/MATH/M2/ENG/CHI/ICT/LS)、功課描述、截止日期(YYYY-MM-DD或空)。"
+                                "只用JSON格式回覆，唔好有其他文字，例子："
+                                "{\"homeworks\":[{\"subject\":\"MATH\",\"title\":\"P.10 Q3\",\"due_date\":\"2026-03-20\"}]}"
+                            )}
+                        ]
+                    }]
+                }).encode()
+                req = urlreq.Request(
+                    "https://api.deepseek.com/chat/completions",
+                    data=payload,
+                    headers={"Content-Type": "application/json",
+                             "Authorization": f"Bearer {DEEPSEEK_KEY}"},
+                    method="POST"
+                )
+                with urlreq.urlopen(req, timeout=30) as r:
+                    resp = _json.loads(r.read())
+                text = resp["choices"][0]["message"]["content"].strip()
+                # Extract JSON
                 m = _re.search(r'\{.*\}', text, _re.DOTALL)
                 if m:
                     parsed = _json.loads(m.group())
-                    result["homeworks"] = parsed.get("homeworks",[])
-                    result["raw"] = text
-            except (json.JSONDecodeError, ValueError):
-                result["raw"] = text
-        except Exception as e:
-            result["ai_error"] = str(e)
+                    result["homeworks"] = parsed.get("homeworks", [])
+                    result["ai_model"] = model
+                    ai_success = True
+                    break
+            except Exception as e:
+                result.setdefault("ai_errors", []).append(f"{model}: {e}")
+                continue
+
+        if not ai_success:
+            result["ai_note"] = "AI 視覺識別暫時無法使用，請手動輸入功課"
+    else:
+        result["ai_note"] = "未設定 AI Key，請手動輸入功課"
+
     return jsonify(result)
 
 
