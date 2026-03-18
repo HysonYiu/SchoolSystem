@@ -687,7 +687,9 @@ def do_update():
             if not updated: updated = ["(already up to date or pulled)"]
             def restart():
                 time.sleep(2)
-                open(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".restart_requested"), "w").close(); os.kill(os.getpid(), 15)
+                with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".restart_requested"), "w") as f:
+                    pass
+                os.kill(os.getpid(), 15)
             threading.Thread(target=restart,daemon=True).start()
             return jsonify({"ok":True,"method":method_used,"updated":updated,"msg":"Git pull OK, restarting..."})
         else:
@@ -738,7 +740,9 @@ def do_update():
     method_used = "HTTP download"
     def restart():
         time.sleep(2)
-        open(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".restart_requested"), "w").close(); os.kill(os.getpid(), 15)
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".restart_requested"), "w") as f:
+            pass
+        os.kill(os.getpid(), 15)
     threading.Thread(target=restart,daemon=True).start()
     return jsonify({"ok":True,"method":method_used,"updated":updated,"errors":errors,"msg":"Restarting..."})
 
@@ -753,7 +757,9 @@ def rollback():
             if os.path.exists(bak): shutil.copy(bak, dst)
         def restart():
             time.sleep(1)
-            open(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".restart_requested"), "w").close(); os.kill(os.getpid(), 15)
+            with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".restart_requested"), "w") as f:
+                pass
+            os.kill(os.getpid(), 15)
         threading.Thread(target=restart, daemon=True).start()
         return jsonify({"ok":True})
     except Exception as e:
@@ -764,7 +770,9 @@ def admin_restart():
     if not admin_auth(request): return jsonify({"error":"unauthorized"}),401
     def do():
         time.sleep(1)
-        open(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".restart_requested"), "w").close(); os.kill(os.getpid(), 15)
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".restart_requested"), "w") as f:
+            pass
+        os.kill(os.getpid(), 15)
     threading.Thread(target=do, daemon=True).start()
     return jsonify({"ok":True})
 

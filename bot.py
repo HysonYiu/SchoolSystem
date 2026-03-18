@@ -12,7 +12,7 @@ CH_SYSTEM   = int(os.getenv("DISCORD_CH_SYSTEM","0"))
 CH_EXAM     = int(os.getenv("DISCORD_CH_EXAM","0"))
 USER_ID     = int(os.getenv("DISCORD_USER_ID","0"))
 DB_PATH     = os.path.join(os.path.dirname(os.path.abspath(__file__)), "schoolsystem.db")
-DEEPSEEK_KEY= os.getenv("DEEPSEEK_API_KEY","")
+DEEPSEEK_KEY = os.getenv("DEEPSEEK_API_KEY", "")
 REMIND_TIME = os.getenv("DAILY_REMINDER_TIME","07:30")
 
 import discord

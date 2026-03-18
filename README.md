@@ -3,7 +3,7 @@
 > 個人學習管理系統 — 專為香港 DSE 學生設計
 
 ![Version](https://img.shields.io/badge/version-1.3.8-5856d6)
-![Python](https://img.shields.io/badge/python-3.13-blue)
+![Python](https://img.shields.io/badge/python-3.10+-blue)
 ![Flask](https://img.shields.io/badge/flask-3.1-lightgrey)
 ![Discord](https://img.shields.io/badge/discord-bot-5865f2)
 ![License](https://img.shields.io/badge/license-MIT-green)
