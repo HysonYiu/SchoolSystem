@@ -2,191 +2,308 @@
 
 > 個人學習管理系統 — 專為香港 DSE 學生設計
 
-![Version](https://img.shields.io/badge/version-1.3.8-5856d6)
+![Version](https://img.shields.io/badge/version-2.0.0--alpha.1-5856d6)
 ![Python](https://img.shields.io/badge/python-3.10+-blue)
 ![Flask](https://img.shields.io/badge/flask-3.1-lightgrey)
-![Discord](https://img.shields.io/badge/discord-bot-5865f2)
+![Discord](https://img.shields.io/badge/discord.py-2.4-5865f2)
 ![License](https://img.shields.io/badge/license-MIT-green)
+![Status](https://img.shields.io/badge/status-actively%20maintained-brightgreen)
 
 ---
 
-## ✨ 功能
+## ✨ 核心功能
 
 | 功能 | 說明 |
 |------|------|
-| 📝 功課管理 | 記錄功課、小測、默書、實驗，支援優先級、截止日期、撤銷 |
-| 📋 課程時間表 | 7日 Cycle 制度，自動顯示今日係 Day 幾，當堂高亮 |
-| 📅 考試 & 小測 | 統一管理，自動倒數，里程碑提醒 |
-| 📷 白板拍照 | AI 自動識別白板功課內容，一撳加入功課表 |
-| 🎙️ 錄音存檔 | 錄製課堂筆記，iOS/Android 原生錄音支援 |
-| 🤖 AI 助手 | DeepSeek Reasoner 驅動，溫書計劃、功課建議 |
-| 🤖 Discord Bot | Slash Commands、每日提醒、考試倒數推送 |
-| 📊 統計分析 | 完成率、各科功課量、逾期記錄 |
-| ⚙️ 管理員介面 | 自動更新、在線編輯設定、日誌查看 |
-| 🔄 Watchdog | 自動重啟，crash 後 3 秒恢復，Admin Panel 一鍵更新 |
+| 📝 **功課管理** | 記錄功課、小測、默書、實驗，支援優先級、截止日期、撤銷 |
+| 📋 **課程時間表** | 7日 Cycle 制度，自動顯示今日係 Day 幾，當堂高亮 |
+| 📅 **考試 & 小測** | 統一管理，自動倒數，里程碑提醒 |
+| 📷 **白板識別** | AI 自動識別白板功課內容，一鍵加入功課表 |
+| 🎙️ **錄音存檔** | 錄製課堂筆記，支援多種音頻格式 |
+| 🤖 **AI 助手** | DeepSeek Reasoner 驅動，溫書計劃、功課建議 |
+| 💬 **Discord Bot** | Slash Commands、每日提醒、考試倒數推送 |
+| 📊 **統計分析** | 完成率、各科功課量、逾期記錄 |
+| ⚙️ **管理員面板** | 自動更新、在線編輯設定、日誌查看 |
+| 🔄 **自動重啟** | Watchdog 監控，Crash 後 3 秒自動恢復 |
 
 ---
 
-## 🏗️ 架構
+## 🚀 快速開始
 
-```
-Redmi Note 12 (Termux)
-├── start.sh           ← Watchdog (自動重啟)
-├── main.py            ← Flask 後端 + API
-├── bot.py             ← Discord Bot
-├── ui.py              ← 前端 HTML/CSS/JS
-├── timetable.py       ← 課程表 (Day 1-7)
-├── recording.py       ← 錄音 Blueprint
-├── .env               ← 密鑰設定 (不上傳)
-└── schoolsystem.db    ← SQLite 數據庫
+### 系統要求
 
-iPad (學校 Wi-Fi + L2TP VPN)
-    ↓
-http://YOUR_DEVICE_IP:8081
-```
+- **硬件**：Android 手機（推薦 Redmi Note 12）
+- **軟件**：Termux + Python 3.10+
+- **網絡**：家中 Wi-Fi 或學校 VPN
 
----
+### 安裝步驟
 
-## 🚀 安裝
-
-### 需要環境
-- Android 手機 + Termux
-- Python 3.10+
-
-### 步驟
+#### 1️⃣ 在 Termux 中安裝依賴
 
 ```bash
-# 1. 安裝依賴
 pkg install python git -y
-pip install flask discord.py requests python-dotenv --break-system-packages
-
-# 2. Clone
 git clone https://github.com/SchoolSystemYiu/SchoolSystem.git
 cd SchoolSystem
+```
 
-# 3. 設定環境變數
+#### 2️⃣ 安裝 Python 套件
+
+```bash
+# 使用 requirements.txt（推薦）
+pip install -r requirements.txt
+
+# 或手動安裝
+pip install Flask discord.py python-dotenv requests
+```
+
+#### 3️⃣ 設定環境變數
+
+```bash
 cp .env.example .env
-nano .env
+nano .env  # 編輯密鑰、API 密鑰等
+```
 
-# 4. 啟動 (watchdog 模式)
+**環境變數說明** - 見 [.env.example](.env.example)
+
+#### 4️⃣ 啟動應用
+
+```bash
+# 使用 Watchdog（推薦，會自動重啟）
 nohup bash start.sh > /dev/null 2>&1 &
 termux-wake-lock
+
+# 或直接運行
+python main.py
 ```
+
+應用將運行在 `http://YOUR_DEVICE_IP:8081`
 
 ---
 
-## ⚙️ 設定 (.env)
+## 📖 完整文檔
 
-```ini
-SECRET_KEY=           # 登入密鑰
-ADMIN_KEY=            # 管理員密鑰
-DISCORD_TOKEN=        # Discord Bot Token
-DISCORD_GUILD_ID=     # Discord Server ID
-DISCORD_CH_HOMEWORK=  # 功課提醒 Channel ID
-DISCORD_CH_AI=        # AI 對話 Channel ID
-DISCORD_CH_SYSTEM=    # 系統通知 Channel ID
-DISCORD_CH_EXAM=      # 考試倒數 Channel ID
-DISCORD_USER_ID=      # 你的 Discord User ID
-DEEPSEEK_API_KEY=     # AI 功能 (可選)
-PORT=8081
-BIND_HOST=0.0.0.0
-DAILY_REMINDER_TIME=07:30
-CYCLE_START_DATE=2025-09-02
-```
-
----
-
-## 📱 存取
-
-| 裝置 | 方法 |
+| 文檔 | 說明 |
 |------|------|
-| 屋企 Wi-Fi | `http://YOUR_DEVICE_IP:8081` |
-| 學校 iPad | L2TP VPN → 同上 |
-| 管理員 | `http://YOUR_DEVICE_IP:8081/admin` |
+| 🏗️ [系統架構](docs/ARCHITECTURE.md) | 高層設計、模塊說明、數據流 |
+| 🔌 [API 參考](docs/API.md) | 完整 REST API 端點、請求/響應示例 |
+| 👨‍💻 [開發指南](docs/DEVELOPMENT.md) | 本地開發設置、代碼風格、測試指南 |
+| 🤝 [貢獻指南](CONTRIBUTING.md) | PR 流程、代碼規範、報告 Bug |
+| 📜 [行為準則](CODE_OF_CONDUCT.md) | 社區指南、行為標準 |
+| 🎯 [類型提示指南](docs/TYPE_HINTS_GUIDE.md) | Type hints、Docstrings 規範 |
+
+---
+
+## 📱 使用方法
+
+### Web UI（iPad / 瀏覽器）
+
+```
+訪問：http://YOUR_DEVICE_IP:8081
+登入：輸入 SECRET_KEY
+功能：
+  - 功課管理（新增、完成、刪除）
+  - 查看時間表 + Cycle Day
+  - 統計分析
+  - 管理員面板（更新、設定、日誌）
+```
+
+### Discord Bot（Discord 伺服器）
+
+```
+/hw              → 顯示所有待做功課
+/today           → 今日截止功課
+/add             → 新增功課（對話模式）
+/done <id>       → 標記功課完成
+/exam            → 考試列表
+/stats           → 統計信息
+/ask <問題>      → AI 問答
+/study <天數>    → 生成溫書計劃
+/cycle           → 今日 Day 幾 + 課表
+```
+
+### REST API（程式整合）
+
+```bash
+# 取得今日功課
+curl http://YOUR_DEVICE_IP:8081/api/today
+
+# 新增功課
+curl -X POST http://YOUR_DEVICE_IP:8081/api/hw \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Chemistry Lab",
+    "subject": "CHEM",
+    "hw_type": "實驗",
+    "due_date": "2025-03-25",
+    "priority": "高"
+  }'
+
+# 完整 API 文檔見 docs/API.md
+```
+
+---
+
+## 🏗️ 系統架構
+
+```
+┌─────────────────────────────────────┐
+│   iPad / Browser / Discord          │
+│   (Multiple User Interfaces)        │
+└──────────────┬──────────────────────┘
+               │
+┌──────────────▼──────────────────────┐
+│   Flask Backend (main.py)           │
+│   - REST API                        │
+│   - Authentication                  │
+│   - Database Operations             │
+└──────────────┬──────────────────────┘
+               │
+    ┌──────────┼──────────┐
+    │          │          │
+    ▼          ▼          ▼
+┌────────┐ ┌────────┐ ┌─────────┐
+│SQLite  │ │AI Agent│ │Recording│
+│Database│ │(Bot)   │ │Module   │
+└────────┘ └────────┘ └─────────┘
+```
+
+詳見 [系統架構文檔](docs/ARCHITECTURE.md)
+
+---
+
+## 🛠️ 開發
+
+### 開發環境設置
+
+```bash
+# 建立虛擬環境
+python -m venv venv
+source venv/bin/activate
+
+# 安裝開發工具
+pip install -r requirements-dev.txt
+
+# 安裝 pre-commit hooks
+pre-commit install
+
+# 運行代碼風格檢查
+black .
+flake8 .
+isort .
+
+# 運行測試
+pytest tests/ -v --cov=.
+```
+
+### 代碼風格
+
+- **Python**: PEP 8 (使用 Black + isort 自動格式化)
+- **Import**: 標準庫 → 第三方 → 本地 (PEP 8 順序)
+- **類型提示**: 推薦（見 [類型提示指南](docs/TYPE_HINTS_GUIDE.md)）
+- **Docstrings**: Google 風格
+
+### 貢獻流程
+
+1. Fork 項目
+2. 創建 feature 分支 (`git checkout -b feature/xyz`)
+3. 提交變更 (`git commit -m "feat(scope): description"`)
+4. 推送到分支 (`git push origin feature/xyz`)
+5. 開啟 Pull Request
+
+詳見 [CONTRIBUTING.md](CONTRIBUTING.md)
+
+---
+
+## 📊 項目狀態
+
+### 最新版本：2.0.0-alpha.1
+
+| 組件 | 狀態 | 說明 |
+|------|------|------|
+| 核心功能 | ✅ 完成 | 功課、時間表、考試管理 |
+| Discord Bot | ✅ 完成 | 所有 Slash Commands |
+| AI 助手 | ✅ 完成 | DeepSeek 整合 |
+| 標準化 | ✅ 完成 | 依賴管理、代碼風格、CI/CD |
+| 文檔 | ✅ 完成 | API、架構、開發指南 |
+| 測試 | 🟨 進行中 | 基礎框架完成，需增加覆蓋率 |
+| 類型提示 | 🟨 進行中 | 指南完成，待逐步實施 |
+
+見 [TODO.md](TODO.md) 了解未來計劃
 
 ---
 
 ## 🔄 更新
 
-**Admin Panel（推薦）：**
-`/admin` → 更新 tab → 「檢查更新」→「立即更新」→ 自動 git pull + watchdog 重啟
+### 使用 Admin Panel（推薦）
 
-**手動：**
+1. 訪問 `http://YOUR_DEVICE_IP:8081/admin`
+2. 進入「更新」標籤
+3. 點擊「檢查更新」
+4. 點擊「立即更新」
+5. 系統自動 `git pull` + 重啟
+
+### 手動更新
+
 ```bash
 cd ~/SchoolSystem
 git pull origin main
-# watchdog 會自動重啟，或手動：
+# Watchdog 會自動重啟，或手動：
 pkill -f "python main.py" && nohup bash start.sh > /dev/null 2>&1 &
 ```
 
 ---
 
-## 🤖 Discord 指令
+## 🔒 安全
 
-| 指令 | 功能 |
-|------|------|
-| `/hw` | 全部待做功課 |
-| `/today` | 今日截止功課 |
-| `/add` | 加入功課 |
-| `/done` | 標記完成 |
-| `/exam` | 考試列表 |
-| `/stats` | 統計 |
-| `/ask` | 問 AI |
-| `/study` | 生成溫書計劃 |
-| `/cycle` | 今日 Day 幾 + 課表 |
-
----
-
-## 📁 API
-
-```
-GET  /health                    → 系統狀態
-GET  /api/today                 → 今日功課 + Cycle Day
-GET  /api/cycle                 → Cycle Day 資訊
-GET  /api/timetable?day=N       → 課程表
-GET  /api/hw                    → 功課列表
-POST /api/hw                    → 加功課
-POST /api/hw/<id>/done          → 標記完成
-POST /api/hw/<id>/undone        → 撤銷完成
-GET  /api/exams                 → 考試列表
-GET  /api/stats                 → 統計
-POST /api/ai/ask                → AI 問答
-POST /api/ai/study_plan         → AI 溫書計劃
-POST /api/whiteboard/upload     → 白板上載 + AI 識別
-GET  /api/recordings            → 錄音列表
-POST /api/recordings/upload     → 上載錄音
-GET  /admin                     → 管理員介面
-GET  /admin/check_update        → 檢查更新
-GET  /admin/update              → 執行更新
-```
+- ✅ `.env` 已加入 `.gitignore`，敏感信息不上傳
+- ✅ Cookie 認證，30 天有效期
+- ✅ 管理員功能需要獨立 Admin Key
+- ✅ 所有請求記錄訪問日誌
+- ✅ SQL 查詢使用參數化防止注入
+- ⚠️ 建議 HTTPS 用於遠程訪問
 
 ---
 
 ## 📋 版本歷史
 
-| 版本 | 更新內容 |
-|------|---------|
-| v1.3.8 | Watchdog 自動重啟，移除 os.execv，Termux:Boot 支援 |
-| v1.3.7 | Discord Bot，Slash Commands，每日提醒 |
-| v1.3.6 | 更新系統 git pull 優先，multi-mirror 備用 |
-| v1.3.5 | JS syntax fix，aiStudyPlan 修復 |
-| v1.3.4 | GH_RAW 修復，更新系統多鏡像 |
-| v1.3.3 | 管理員介面重做，錯誤橫幅，日誌查看 |
-| v1.3.2 | 移除重複 ai_ask route |
-| v1.3.1 | 白板上載，考試小測合一 tab，Chrome 底部 bar |
-| v1.3.0 | AI Agent 架構 |
-| v1.2.0 | 錄音，撤銷，管理員更新 |
-| v1.1.0 | Cycle Day，時間表，AI 助手 |
-| v1.0.0 | 基礎功課管理，考試倒數 |
+見 [CHANGELOG.md](CHANGELOG.md) 了解完整版本歷史
+
+### 主要里程碑
+
+| 版本 | 日期 | 亮點 |
+|------|------|------|
+| v2.0.0 (alpha) | 2025-03 | 項目標準化、完整文檔、測試框架 |
+| v1.3.8 | 2025-02 | Watchdog 自動重啟 |
+| v1.3.0 | 2025-01 | AI Agent 架構 |
+| v1.0.0 | 2024-12 | MVP 發佈 |
 
 ---
 
-## 🔒 安全
+## 💡 常見問題
 
-- `.env` 已加入 `.gitignore`，密鑰唔會上傳
-- Cookie 認證，30 天有效
-- 管理員功能需要獨立 Admin Key
-- 訪問日誌記錄所有請求
+### Q: 如何在學校 iPad 訪問？
+**A:** 使用 L2TP VPN 連接到家中網絡，然後訪問 `http://YOUR_DEVICE_IP:8081`
+
+### Q: AI 功能不工作？
+**A:** 檢查是否設置了 `DEEPSEEK_API_KEY`（可選）。若不設置，AI 功能將被禁用。
+
+### Q: 如何備份功課數據？
+**A:** 複製 `schoolsystem.db` 文件。Admin Panel 也支持導出日誌。
+
+### Q: 可以在多個設備上使用嗎？
+**A:** 可以。多個設備可以同時連接到同一個伺服器實例。
+
+更多問題見 [CONTRIBUTING.md](CONTRIBUTING.md#問題或需要幫助)
+
+---
+
+## 🤝 貢獻
+
+感謝所有貢獻者！
+
+- 📝 報告 Bug：[GitHub Issues](https://github.com/SchoolSystemYiu/SchoolSystem/issues)
+- 💬 建議功能：[GitHub Discussions](https://github.com/SchoolSystemYiu/SchoolSystem/discussions)
+- 🔀 提交 PR：見 [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ---
 
@@ -194,8 +311,34 @@ GET  /admin/update              → 執行更新
 
 MIT License © 2026 [SchoolSystemYiu](https://github.com/SchoolSystemYiu)
 
+見 [LICENSE](LICENSE) 了解詳細許可條款
+
+---
+
+## 🙏 鳴謝
+
+感謝香港 DSE 學生社區的反饋和支持。
+
+特別感謝：
+- **Flask** - Web 框架
+- **discord.py** - Discord 集成
+- **DeepSeek** - AI 功能
+- **SQLite** - 數據儲存
+
+---
+
+## 📧 聯繫
+
+- 📌 GitHub: [@SchoolSystemYiu](https://github.com/SchoolSystemYiu)
+- 📚 Project: [SchoolSystem](https://github.com/SchoolSystemYiu/SchoolSystem)
+- 💬 Issues: [Bug Reports & Features](https://github.com/SchoolSystemYiu/SchoolSystem/issues)
+
 ---
 
 <div align="center">
-  <sub>Built for DSE students in Hong Kong 🇭🇰</sub>
+
+**Built with ❤️ for DSE students in Hong Kong 🇭🇰**
+
+[⬆ 返回頂部](#-schoolsystem)
+
 </div>
