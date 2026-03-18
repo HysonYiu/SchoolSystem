@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 from flask import Flask, Response, g, jsonify, make_response, redirect, request
 
 load_dotenv()
-__version__ = "2.0.0-alpha.5"
+__version__ = "2.0.0-alpha.6"
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 100 * 1024 * 1024  # 100 MB for audio uploads
@@ -317,8 +317,8 @@ def stats():
 @app.route("/api/ai/ask", methods=["POST"])
 def ai_ask():
     if not auth(request): return jsonify({"error":"unauthorized"}),401
-    if not DEEPSEEK_KEY:
-        return jsonify({"error":"no_key","msg":"請先設定 DEEPSEEK_API_KEY"}),503
+    if not DEEPSEEK_KEY and not POE_KEY:
+        return jsonify({"error":"no_key","msg":"請先設定 DEEPSEEK_API_KEY 或 POE_API_KEY"}),503
     d = request.get_json()
     q = (d or {}).get("question","")
     if not q: return jsonify({"error":"empty"}),400
@@ -327,19 +327,44 @@ def ai_ask():
     exams = db.execute("SELECT subject,title,exam_date FROM exams WHERE exam_date>=date('now') ORDER BY exam_date ASC LIMIT 5").fetchall()
     get_cycle_day, _, _ = _get_cycle_and_school()
     ctx = f"今日 {date.today().isoformat()}，Cycle Day {get_cycle_day()}。未完成功課：{[dict(h) for h in hw]}。考試：{[dict(e) for e in exams]}。"
-    try:
-        import urllib.request as urlreq
-        payload = json.dumps({"model":"deepseek-reasoner","max_tokens":800,"messages":[
-            {"role":"system","content":"你係香港中學生學習助手，熟悉 DSE。用廣東話回答，簡潔清晰。背景："+ctx},
-            {"role":"user","content":q}
-        ]}).encode()
-        req = urlreq.Request("https://api.deepseek.com/chat/completions", data=payload,
-            headers={"Content-Type":"application/json","Authorization":f"Bearer {DEEPSEEK_KEY}"}, method="POST")
-        with urlreq.urlopen(req, timeout=30) as r:
-            result = json.loads(r.read())
-        return jsonify({"ok":True,"answer":result["choices"][0]["message"]["content"]})
-    except Exception as e:
-        return jsonify({"error":str(e)}),500
+    sys_msg = "你係香港中學生學習助手，熟悉 DSE。用廣東話回答，簡潔清晰。背景：" + ctx
+    import urllib.request as urlreq
+
+    # Method 1: Poe API (Gemini-2.5-Flash — fast + smart)
+    if POE_KEY:
+        try:
+            payload = json.dumps({
+                "model": "Gemini-2.5-Flash",
+                "max_tokens": 800,
+                "messages": [
+                    {"role": "system", "content": sys_msg},
+                    {"role": "user",   "content": q}
+                ]
+            }).encode()
+            req = urlreq.Request("https://api.poe.com/v1/chat/completions", data=payload,
+                headers={"Content-Type":"application/json","Authorization":f"Bearer {POE_KEY}"}, method="POST")
+            with urlreq.urlopen(req, timeout=30) as r:
+                result = json.loads(r.read())
+            return jsonify({"ok":True,"answer":result["choices"][0]["message"]["content"],"model":"Poe/Gemini-2.5-Flash"})
+        except Exception as e:
+            pass  # Fall through to DeepSeek
+
+    # Method 2: DeepSeek Reasoner fallback
+    if DEEPSEEK_KEY:
+        try:
+            payload = json.dumps({"model":"deepseek-reasoner","max_tokens":800,"messages":[
+                {"role":"system","content":sys_msg},
+                {"role":"user","content":q}
+            ]}).encode()
+            req = urlreq.Request("https://api.deepseek.com/chat/completions", data=payload,
+                headers={"Content-Type":"application/json","Authorization":f"Bearer {DEEPSEEK_KEY}"}, method="POST")
+            with urlreq.urlopen(req, timeout=30) as r:
+                result = json.loads(r.read())
+            return jsonify({"ok":True,"answer":result["choices"][0]["message"]["content"],"model":"DeepSeek-Reasoner"})
+        except Exception as e:
+            return jsonify({"error":str(e)}),500
+
+    return jsonify({"error":"all_failed"}),500
 
 @app.route("/api/ai/study_plan", methods=["POST"])
 def ai_study_plan():
