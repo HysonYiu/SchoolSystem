@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 from flask import Flask, Response, g, jsonify, make_response, redirect, request
 
 load_dotenv()
-__version__ = "2.0.0-alpha.1"
+__version__ = "2.0.0-alpha.2"
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 100 * 1024 * 1024  # 100 MB for audio uploads
