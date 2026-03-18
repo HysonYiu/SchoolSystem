@@ -84,6 +84,8 @@ python main.py
 
 | 文檔 | 說明 |
 |------|------|
+| 🗺️ [項目路線圖](ROADMAP.md) | 功能優先級、里程碑、Kanban 看板 |
+| 📊 [項目管理指南](PROJECT_MANAGEMENT.md) | GitHub 工作流、Issue/PR 流程 |
 | 🏗️ [系統架構](docs/ARCHITECTURE.md) | 高層設計、模塊說明、數據流 |
 | 🔌 [API 參考](docs/API.md) | 完整 REST API 端點、請求/響應示例 |
 | 👨‍💻 [開發指南](docs/DEVELOPMENT.md) | 本地開發設置、代碼風格、測試指南 |
