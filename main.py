@@ -13,7 +13,11 @@ SECRET_KEY   = os.getenv("SECRET_KEY", "changeme")
 ADMIN_KEY    = os.getenv("ADMIN_KEY", "adminme")
 DB_PATH      = os.path.join(os.path.dirname(os.path.abspath(__file__)), "schoolsystem.db")
 ENV_PATH     = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
-PORT         = int(os.getenv("PORT", 8081))
+
+try:
+    PORT = int(os.getenv("PORT", "8081"))
+except ValueError:
+    PORT = 8081
 HOST         = os.getenv("BIND_HOST", "0.0.0.0")
 DEEPSEEK_KEY = os.getenv("DEEPSEEK_API_KEY", "")
 GH_REPO      = os.getenv("GITHUB_REPO", "SchoolSystemYiu/SchoolSystem")
@@ -84,7 +88,8 @@ def log_action(action, detail=""):
         db.execute("INSERT INTO access_log(ip,action,detail) VALUES(?,?,?)",
                    (request.remote_addr, action, detail))
         db.commit(); db.close()
-    except: pass
+    except Exception as e:
+        pass
 
 
 # ── Cycle helpers ─────────────────────────────────────────────────────────────
@@ -154,7 +159,10 @@ PRIORITY_ORDER = "CASE priority WHEN '高' THEN 1 WHEN '中' THEN 2 WHEN '低' T
 def hw_list():
     if not auth(request): return jsonify({"error":"unauthorized"}),401
     db = get_db()
-    done = int(request.args.get("done","0"))
+    try:
+        done = int(request.args.get("done","0"))
+    except ValueError:
+        done = 0
     subj = request.args.get("subject","")
     q = "SELECT * FROM homeworks WHERE done=?"
     p = [done]
@@ -329,7 +337,10 @@ def ai_study_plan():
     if not auth(request): return jsonify({"error":"unauthorized"}),401
     if not DEEPSEEK_KEY: return jsonify({"error":"no_key","msg":"請在管理員介面設定 DEEPSEEK_API_KEY"}),503
     d = request.get_json() or {}
-    focus_days = int(d.get("days", 3))
+    try:
+        focus_days = int(d.get("days", 3))
+    except (ValueError, TypeError):
+        focus_days = 3
     try:
         from study_plan import generate_study_plan
         result = generate_study_plan(focus_days=focus_days)
@@ -357,7 +368,11 @@ def study_priorities():
 def logs():
     if not auth(request): return jsonify({"error":"unauthorized"}),401
     db = get_db()
-    n = int(request.args.get("n",50))
+    try:
+        n = int(request.args.get("n",50))
+        n = min(max(n, 1), 1000)  # Bounds: 1-1000
+    except ValueError:
+        n = 50
     rows = db.execute("SELECT * FROM access_log ORDER BY id DESC LIMIT ?",(n,)).fetchall()
     return jsonify([dict(r) for r in rows])
 
@@ -661,7 +676,8 @@ def check_update():
                 with urlreq.urlopen(req, timeout=10) as r:
                     remote = r.read().decode().strip()
                 if remote: break
-            except: continue
+            except (OSError, ValueError):
+                continue
         if not remote: return jsonify({"error":"Cannot reach GitHub"}),500
         return jsonify({"current":__version__,"remote_version":remote,"has_update":remote!=__version__})
     except Exception as e:
@@ -876,7 +892,7 @@ def whiteboard_upload():
                     parsed = _json.loads(m.group())
                     result["homeworks"] = parsed.get("homeworks",[])
                     result["raw"] = text
-            except:
+            except (json.JSONDecodeError, ValueError):
                 result["raw"] = text
         except Exception as e:
             result["ai_error"] = str(e)

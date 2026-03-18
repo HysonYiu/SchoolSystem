@@ -5,7 +5,10 @@ Study Plan Generator
 """
 import os, json, sqlite3
 from datetime import date, datetime, timedelta
+from dotenv import load_dotenv
 from timetable import TIMETABLE, ALL_NO_SCHOOL, get_cycle_day, is_school_day
+
+load_dotenv()
 
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "schoolsystem.db")
 DEEPSEEK_KEY = os.getenv("DEEPSEEK_API_KEY", "")

@@ -410,7 +410,7 @@ def add_hw_agent(question, ctx):
                 "action": None,
                 "agent": "AddHWAgent"
             }
-    except:
+    except (json.JSONDecodeError, KeyError, ValueError, TypeError):
         return {
             "answer": "唔好意思，請直接用「加功課」頁面加入，或者詳細描述功課（科目、標題、截止日期）。",
             "action": None,
