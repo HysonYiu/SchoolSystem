@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 from flask import Flask, Response, g, jsonify, make_response, redirect, request
 
 load_dotenv()
-__version__ = "2.0.0-alpha.4"
+__version__ = "2.0.0-alpha.5"
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 100 * 1024 * 1024  # 100 MB for audio uploads
@@ -894,55 +894,49 @@ def whiteboard_upload():
         '如果冇功課，返回：{"homeworks":[]}'
     )
 
-    # ── Method 1: Poe API via fastapi-poe (primary — Claude Vision) ─────────
+    # ── Method 1: Poe API — Gemini-2.5-Flash vision (OpenAI-compat) ─────────
     if POE_KEY:
-        try:
-            import fastapi_poe as fp, asyncio, tempfile, os as _os
-
-            async def _poe_vision():
-                # Save image to temp file for Poe attachment
-                with tempfile.NamedTemporaryFile(suffix=f".{ext}", delete=False) as tmp:
-                    tmp.write(raw_bytes)
-                    tmp_path = tmp.name
-                try:
-                    # Use file_path attachment for local file
-                    attachment = fp.Attachment(
-                        content=raw_bytes,
-                        content_type=mime,
-                        name=f"whiteboard.{ext}"
-                    )
-                    msg = fp.ProtocolMessage(
-                        role="user",
-                        content=PROMPT,
-                        attachments=[attachment]
-                    )
-                    full = ""
-                    async for chunk in fp.get_bot_response(
-                        messages=[msg],
-                        bot_name="claude-3-5-sonnet",
-                        api_key=POE_KEY
-                    ):
-                        if hasattr(chunk, "text"):
-                            full += chunk.text
-                    return full.strip()
-                finally:
-                    _os.unlink(tmp_path)
-
-            loop = asyncio.new_event_loop()
-            text = loop.run_until_complete(_poe_vision())
-            loop.close()
-            m = _re.search(r'\{.*\}', text, _re.DOTALL)
-            if m:
-                parsed = _json.loads(m.group())
-                result["homeworks"] = parsed.get("homeworks", [])
-                result["ai_model"]  = "Poe/claude-3-5-sonnet"
-                return jsonify(result)
-            else:
-                result.setdefault("ai_errors", []).append(f"Poe: no JSON in response: {text[:100]}")
-        except ImportError:
-            result.setdefault("ai_errors", []).append("Poe: fastapi-poe not installed (run: pip install fastapi-poe)")
-        except Exception as e:
-            result.setdefault("ai_errors", []).append(f"Poe: {e}")
+        # Poe OpenAI-compatible API: https://api.poe.com/v1
+        # Try Gemini 2.5 Flash first, fallback to 2.0 Flash
+        poe_models = ["Gemini-2.5-Flash", "Gemini-2.0-Flash"]
+        for poe_model in poe_models:
+            try:
+                payload = _json.dumps({
+                    "model": poe_model,
+                    "max_tokens": 800,
+                    "messages": [{
+                        "role": "user",
+                        "content": [
+                            {"type": "image_url",
+                             "image_url": {"url": f"data:{mime};base64,{img_data}"}},
+                            {"type": "text", "text": PROMPT}
+                        ]
+                    }]
+                }).encode()
+                req = urlreq.Request(
+                    "https://api.poe.com/v1/chat/completions",
+                    data=payload,
+                    headers={
+                        "Content-Type":  "application/json",
+                        "Authorization": f"Bearer {POE_KEY}",
+                    },
+                    method="POST"
+                )
+                with urlreq.urlopen(req, timeout=30) as r:
+                    resp = _json.loads(r.read())
+                text = resp["choices"][0]["message"]["content"].strip()
+                m = _re.search(r'\{.*\}', text, _re.DOTALL)
+                if m:
+                    parsed = _json.loads(m.group())
+                    result["homeworks"] = parsed.get("homeworks", [])
+                    result["ai_model"]  = f"Poe/{poe_model}"
+                    return jsonify(result)
+                else:
+                    result.setdefault("ai_errors", []).append(
+                        f"Poe/{poe_model}: no JSON — {text[:80]}")
+            except Exception as e:
+                result.setdefault("ai_errors", []).append(f"Poe/{poe_model}: {e}")
+                continue
 
     # ── Method 2: DeepSeek fallback ───────────────────────────────────────────
     if DEEPSEEK_KEY:
