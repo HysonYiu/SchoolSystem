@@ -111,7 +111,7 @@ def get_full_context(cycle_day=None):
             "total": total,
             "done": done,
             "pending": total - done,
-            "completion_rate": f"{round(done/total*100)}%" if total else "0%"
+            "completion_rate": f"{round(done / total * 100)}%" if total else "0%"
         },
         "homework": {
             "overdue": [_hw_dict(h) for h in hw_overdue],
