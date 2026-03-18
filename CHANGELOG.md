@@ -1,5 +1,29 @@
 # Changelog
 
+## [2.0.0-alpha.1] - 2026-03-18 🧪 ALPHA
+### ⚠️ Alpha Release — 測試版本，可能有 Bug
+
+### 新增
+- 🤖 AI 溫書計劃生成 (考試日期 + 空堂 + 假期分析)
+- ⚡ 今日優先事項 (唔需要 AI Key)
+- 🎯 Discord Bot Slash Commands (9個指令)
+- 🔄 Watchdog 自動重啟系統
+- 📷 白板拍照 AI 識別功課
+- 📋 考試 & 小測統一管理
+
+### 已知問題 (Known Issues)
+- Discord Bot event loop 待測試
+- 白板 AI 識別需要 DeepSeek Vision (部分模型不支援)
+- 更新系統依賴 git 初始化
+
+### 版本標籤說明
+- `alpha` — 新功能測試中，可能有 Bug
+- `beta` — 功能完整，修復緊要 Bug
+- `stable` — 穩定版本，可放心使用
+- `hotfix` — 緊急修復
+
+---
+
 所有版本更新記錄。格式參考 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.0.0/)。
 
 版本號格式：`MAJOR.MINOR.PATCH[-hotfix.N]`
