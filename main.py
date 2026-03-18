@@ -27,7 +27,7 @@ except ValueError:
     PORT = 8081
 HOST         = os.getenv("BIND_HOST", "0.0.0.0")
 DEEPSEEK_KEY = os.getenv("DEEPSEEK_API_KEY", "")
-GH_REPO      = os.getenv("GITHUB_REPO", "SchoolSystemYiu/SchoolSystem")
+GH_REPO      = os.getenv("GITHUB_REPO", "SchoolSystem/SchoolSystem")
 GH_TOKEN     = os.getenv("GITHUB_TOKEN", "")
 
 from recording import recording_bp
