@@ -24,6 +24,12 @@
 
 ---
 
+## [2.0.0-alpha.8] - 2026-03-18 🧪 Alpha
+### 更新
+- update system包括start.sh+chmod，README badge修復，CHANGELOG自動更新，watchdog自我更新
+
+---
+
 所有版本更新記錄。格式參考 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.0.0/)。
 
 版本號格式：`MAJOR.MINOR.PATCH[-hotfix.N]`

@@ -742,10 +742,14 @@ def do_update():
                 os.chmod(sh, os.stat(sh).st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
             def restart():
                 time.sleep(2)
-                with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".restart_requested"), "w") as f:
-                    pass
+                import stat
+                base = os.path.dirname(os.path.abspath(__file__))
+                sh = os.path.join(base, "start.sh")
+                if os.path.exists(sh):
+                    os.chmod(sh, os.stat(sh).st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+                open(os.path.join(base, ".restart_requested"), "w").close()
                 os.kill(os.getpid(), 15)
-            threading.Thread(target=restart,daemon=True).start()
+            threading.Thread(target=restart, daemon=True).start()
             return jsonify({"ok":True,"method":method_used,"updated":updated,"msg":"Git pull OK, restarting..."})
         else:
             errors.append(f"git pull failed: {r.stderr.strip()}")

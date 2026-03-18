@@ -1,87 +1,88 @@
 #!/usr/bin/env python3
 """
-update_version.py — SchoolSystem version management
-用法: python update_version.py <version> "<changelog description>"
-例子: python update_version.py 2.0.0-alpha.9 "fix whiteboard Poe API"
+update_version.py
+用法: python update_version.py <version> "<changelog描述>"
+例子: python update_version.py 2.0.0-alpha.9 "修復白板上載，更新 watchdog"
 
 自動更新:
   - version.txt
   - main.py __version__
-  - README.md badge (正確 shields.io 格式)
-  - CHANGELOG.md (加入新條目)
+  - README.md badge
+  - CHANGELOG.md (加最新版本)
 """
 import sys, re
 from datetime import date
 
-if len(sys.argv) < 3:
-    print("用法: python update_version.py <version> \"<description>\"")
+if len(sys.argv) < 2:
+    print("用法: python update_version.py <version> [description]")
     sys.exit(1)
 
 VERSION = sys.argv[1]
-DESC    = sys.argv[2]
+DESC    = sys.argv[2] if len(sys.argv) > 2 else "版本更新"
 TODAY   = date.today().isoformat()
 
-def shields_safe(v):
-    """shields.io: hyphens → double-dash, underscores → double-underscore"""
-    return v.replace("-", "--").replace("_", "__")
+# Determine release type label
+if "alpha" in VERSION:
+    label = "🧪 Alpha"
+elif "beta" in VERSION:
+    label = "🔵 Beta"
+elif "hotfix" in VERSION:
+    label = "🔴 Hotfix"
+else:
+    label = "✅ Stable"
 
-# ── version.txt ───────────────────────────────────────────────────────────────
+# ── version.txt ──────────────────────────────────────────────────────────────
 with open("version.txt", "w") as f:
     f.write(VERSION + "\n")
-print(f"  ✓ version.txt → {VERSION}")
+print(f"  version.txt → {VERSION}")
 
-# ── main.py ───────────────────────────────────────────────────────────────────
+# ── main.py ──────────────────────────────────────────────────────────────────
 with open("main.py", "r") as f:
     src = f.read()
 src = re.sub(r'__version__ = "[^"]+"', f'__version__ = "{VERSION}"', src)
 with open("main.py", "w") as f:
     f.write(src)
-print(f"  ✓ main.py __version__")
+print(f"  main.py __version__ → {VERSION}")
 
-# ── README.md badge ───────────────────────────────────────────────────────────
+# ── README.md badge (shields.io: hyphens → --) ───────────────────────────────
+badge_ver = VERSION.replace("-", "--")
 with open("README.md", "r") as f:
     readme = f.read()
-
-badge_url = f"https://img.shields.io/badge/version-{shields_safe(VERSION)}-5856d6?style=flat-square"
 readme = re.sub(
     r'!\[Version\]\(https://img\.shields\.io/badge/version-[^)]+\)',
-    f'![Version]({badge_url})',
+    f'![Version](https://img.shields.io/badge/version-{badge_ver}-5856d6)',
     readme
 )
 with open("README.md", "w") as f:
     f.write(readme)
-print(f"  ✓ README.md badge")
-print(f"    → {badge_url}")
+print(f"  README.md badge → v{VERSION}")
 
-# ── CHANGELOG.md ─────────────────────────────────────────────────────────────
+# ── CHANGELOG.md ──────────────────────────────────────────────────────────────
 with open("CHANGELOG.md", "r") as f:
     changelog = f.read()
 
-# Check if version already in changelog
-if f"[{VERSION}]" not in changelog:
-    # Determine tag label
-    if "hotfix" in VERSION:
-        tag = "🔧 HOTFIX"
-    elif "alpha" in VERSION:
-        tag = "🧪 ALPHA"
-    elif "beta" in VERSION:
-        tag = "🔵 BETA"
-    else:
-        tag = "✅ STABLE"
-
-    new_entry = f"""## [{VERSION}] - {TODAY} {tag}
+new_entry = f"""## [{VERSION}] - {TODAY} {label}
 ### 更新
 - {DESC}
 
 ---
 
 """
-    # Insert after first "---" separator (after the header)
-    changelog = changelog.replace("---\n\n## [", f"---\n\n{new_entry}## [", 1)
-    with open("CHANGELOG.md", "w") as f:
-        f.write(changelog)
-    print(f"  ✓ CHANGELOG.md → [{VERSION}] {TODAY}")
-else:
-    print(f"  ⚠ CHANGELOG.md already has [{VERSION}], skipped")
+
+# Insert after the first "---" separator (after header)
+if f"## [{VERSION}]" not in changelog:
+    changelog = changelog.replace(
+        "---\n\n## [2.0.0-alpha.1]",
+        "---\n\n" + new_entry + "## [2.0.0-alpha.1]"
+    )
+    if new_entry not in changelog:
+        # Fallback: insert after first ---
+        parts = changelog.split("---\n\n", 2)
+        if len(parts) >= 2:
+            changelog = parts[0] + "---\n\n" + new_entry + "---\n\n".join(parts[1:])
+
+with open("CHANGELOG.md", "w") as f:
+    f.write(changelog)
+print(f"  CHANGELOG.md → added {VERSION}")
 
 print(f"\n✅ Version bumped to {VERSION}")
