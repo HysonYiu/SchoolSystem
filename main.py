@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 from flask import Flask, Response, g, jsonify, make_response, redirect, request
 
 load_dotenv()
-__version__ = "2.0.0-alpha.7"
+__version__ = "2.0.0-alpha.8"
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 100 * 1024 * 1024  # 100 MB for audio uploads
@@ -735,6 +735,11 @@ def do_update():
             method_used = "git pull"
             updated = [l.strip() for l in r.stdout.split("\n") if "|" in l or "changed" in l]
             if not updated: updated = ["(already up to date or pulled)"]
+            # Ensure start.sh is executable after pull
+            sh = os.path.join(base, "start.sh")
+            if os.path.exists(sh):
+                import stat
+                os.chmod(sh, os.stat(sh).st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
             def restart():
                 time.sleep(2)
                 with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".restart_requested"), "w") as f:
@@ -748,7 +753,7 @@ def do_update():
         errors.append(f"git error: {e}")
 
     # Method 2: HTTP download from multiple mirrors
-    files = ["main.py","ui.py","timetable.py","recording.py","version.txt"]
+    files = ["main.py","ui.py","timetable.py","recording.py","study_plan.py","bot.py","agent.py","start.sh","version.txt"]
     mirrors = [
         f"https://cdn.jsdelivr.net/gh/{GH_REPO}@main/",
         f"https://raw.githubusercontent.com/{GH_REPO}/main/",
@@ -776,6 +781,10 @@ def do_update():
                 shutil.copy(fpath, fpath+".bak")
             with open(fpath,"wb") as out:
                 out.write(content)
+            # Make shell scripts executable
+            if fname.endswith(".sh"):
+                import stat
+                os.chmod(fpath, os.stat(fpath).st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
             updated.append(fname)
         else:
             errors.append(f"{fname}: {last_err}")
