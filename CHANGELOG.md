@@ -34,6 +34,12 @@
 
 ---
 
+## [2.0.0-alpha.9] - 2026-03-18 🧪 ALPHA
+### 更新
+- update system includes all files + self-updating watchdog, README badge fixed (shields.io double-dash encoding), CHANGELOG auto-update on version bump
+
+---
+
 ## [1.3.8] - 2026-03-18
 ### 新增
 - `start.sh` Watchdog 腳本，crash 後 3 秒自動重啟

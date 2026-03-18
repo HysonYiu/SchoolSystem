@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 from flask import Flask, Response, g, jsonify, make_response, redirect, request
 
 load_dotenv()
-__version__ = "2.0.0-alpha.8"
+__version__ = "2.0.0-alpha.9"
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 100 * 1024 * 1024  # 100 MB for audio uploads
@@ -753,7 +753,7 @@ def do_update():
         errors.append(f"git error: {e}")
 
     # Method 2: HTTP download from multiple mirrors
-    files = ["main.py","ui.py","timetable.py","recording.py","study_plan.py","bot.py","agent.py","start.sh","version.txt"]
+    files = ["main.py","ui.py","timetable.py","recording.py","study_plan.py","bot.py","agent.py","start.sh","update_version.py","version.txt"]
     mirrors = [
         f"https://cdn.jsdelivr.net/gh/{GH_REPO}@main/",
         f"https://raw.githubusercontent.com/{GH_REPO}/main/",
