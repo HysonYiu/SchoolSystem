@@ -2,6 +2,7 @@ import os, sqlite3, threading, time, sys, json, shutil
 from datetime import datetime, date, timedelta
 from flask import Flask, request, jsonify, g, Response, make_response, redirect
 from dotenv import load_dotenv
+import secrets
 
 load_dotenv()
 __version__ = "2.0.0-alpha.1"
@@ -18,6 +19,21 @@ HOST         = os.getenv("BIND_HOST", "0.0.0.0")
 DEEPSEEK_KEY = os.getenv("DEEPSEEK_API_KEY", "")
 GH_REPO      = os.getenv("GITHUB_REPO", "HysonYiu/SchoolSystem")
 GH_TOKEN     = os.getenv("GITHUB_TOKEN", "")
+
+# In-memory session token store; in production this should be persistent/centralized.
+SESSION_TOKENS = set()
+
+def create_session_token() -> str:
+    """Create a new random session token and register it as valid."""
+    token = secrets.token_urlsafe(32)
+    SESSION_TOKENS.add(token)
+    return token
+
+def is_valid_session_token(token: str) -> bool:
+    """Check whether a session token is currently valid."""
+    if not token:
+        return False
+    return token in SESSION_TOKENS
 
 from recording import recording_bp
 app.register_blueprint(recording_bp)
@@ -104,9 +120,13 @@ def health():
 def index():
     if not auth(request): return redirect("/login")
     from ui import UI_HTML
-    html = UI_HTML.replace("KEY_PLACEHOLDER", SECRET_KEY)
+    # Do not embed the server-side SECRET_KEY into the client HTML.
+    html = UI_HTML.replace("KEY_PLACEHOLDER", "")
     resp = make_response(Response(html, mimetype="text/html"))
-    resp.set_cookie("key", SECRET_KEY, max_age=30*24*3600)
+    # Do not store SECRET_KEY in a cookie; rely on an existing session token instead.
+    session_token = request.cookies.get("key", "")
+    if is_valid_session_token(session_token):
+        resp.set_cookie("key", session_token, max_age=30*24*3600)
     return resp
 
 @app.route("/login", methods=["GET","POST"])
@@ -115,8 +135,10 @@ def login():
     if request.method == "POST":
         k = request.form.get("key","")
         if k == SECRET_KEY:
+            # User provided the correct secret; issue a separate random session token.
+            session_token = create_session_token()
             resp = make_response(redirect("/"))
-            resp.set_cookie("key", k, max_age=30*24*3600)
+            resp.set_cookie("key", session_token, max_age=30*24*3600)
             return resp
         error = "密鑰錯誤，請重試"
     return f"""<!DOCTYPE html><html><head>
