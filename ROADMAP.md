@@ -225,8 +225,8 @@ S = Small     | M = Medium     | L = Large    | XL = Extra Large
 
 Have ideas for new features? Found a bug? Want to help?
 
-- 💬 [GitHub Discussions](https://github.com/SchoolSystemYiu/SchoolSystem/discussions) - Feature requests & ideas
-- 🐛 [GitHub Issues](https://github.com/SchoolSystemYiu/SchoolSystem/issues) - Bug reports
+- 💬 [GitHub Discussions](https://github.com/SchoolSystem/discussions) - Feature requests & ideas
+- 🐛 [GitHub Issues](https://github.com/SchoolSystem/issues) - Bug reports
 - 🤝 [Contributing Guide](CONTRIBUTING.md) - How to contribute
 
 ---
@@ -245,7 +245,7 @@ Have ideas for new features? Found a bug? Want to help?
 <div align="center">
 
 **Last Updated:** 2026-03-18
-**Maintained by:** [@SchoolSystemYiu](https://github.com/SchoolSystemYiu)
+**Project:** SchoolSystem
 **See Also:** [CHANGELOG.md](CHANGELOG.md) | [TODO.md](TODO.md) | [Contributing Guide](CONTRIBUTING.md)
 
 </div>

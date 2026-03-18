@@ -230,12 +230,12 @@ Visual Kanban board for tracking work-in-progress.
 **Every month, check:**
 
 1. **Milestone Progress**
-   - Open: `https://github.com/SchoolSystemYiu/SchoolSystem/milestones`
+   - Open: GitHub Milestones page
    - Check % complete for current milestone
    - Adjust due date if needed
 
 2. **Project Board Health**
-   - Open: `https://github.com/SchoolSystemYiu/SchoolSystem/projects`
+   - Open: GitHub Project Board
    - Ensure In Progress items have assignees
    - Look for blocked items
 
@@ -370,12 +370,12 @@ Visual Kanban board for tracking work-in-progress.
 ## 📞 Support
 
 Questions about project management?
-- 💬 [GitHub Discussions](https://github.com/SchoolSystemYiu/SchoolSystem/discussions)
+- 💬 [GitHub Discussions](https://github.com/SchoolSystem/discussions)
 - 📧 Contact maintainer
 - 📖 Read this guide again
 
 ---
 
 **Last Updated:** 2026-03-18
-**Maintained by:** [@SchoolSystemYiu](https://github.com/SchoolSystemYiu)
+**Project:** SchoolSystem
 

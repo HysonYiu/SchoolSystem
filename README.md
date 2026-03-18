@@ -42,7 +42,7 @@
 
 ```bash
 pkg install python git -y
-git clone https://github.com/SchoolSystemYiu/SchoolSystem.git
+git clone https://github.com/SchoolSystem/SchoolSystem.git
 cd SchoolSystem
 ```
 
@@ -303,15 +303,15 @@ pkill -f "python main.py" && nohup bash start.sh > /dev/null 2>&1 &
 
 感謝所有貢獻者！
 
-- 📝 報告 Bug：[GitHub Issues](https://github.com/SchoolSystemYiu/SchoolSystem/issues)
-- 💬 建議功能：[GitHub Discussions](https://github.com/SchoolSystemYiu/SchoolSystem/discussions)
+- 📝 報告 Bug：[GitHub Issues](https://github.com/SchoolSystem/issues)
+- 💬 建議功能：[GitHub Discussions](https://github.com/SchoolSystem/discussions)
 - 🔀 提交 PR：見 [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ---
 
 ## 📄 License
 
-MIT License © 2026 [SchoolSystemYiu](https://github.com/SchoolSystemYiu)
+MIT License © 2026
 
 見 [LICENSE](LICENSE) 了解詳細許可條款
 
@@ -331,9 +331,9 @@ MIT License © 2026 [SchoolSystemYiu](https://github.com/SchoolSystemYiu)
 
 ## 📧 聯繫
 
-- 📌 GitHub: [@SchoolSystemYiu](https://github.com/SchoolSystemYiu)
-- 📚 Project: [SchoolSystem](https://github.com/SchoolSystemYiu/SchoolSystem)
-- 💬 Issues: [Bug Reports & Features](https://github.com/SchoolSystemYiu/SchoolSystem/issues)
+- 📌 GitHub: [Project Repository](https://github.com/SchoolSystem)
+- 📚 Project: [SchoolSystem](https://github.com/SchoolSystem)
+- 💬 Issues: [Bug Reports & Features](https://github.com/SchoolSystem/issues)
 
 ---
 

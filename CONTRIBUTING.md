@@ -13,7 +13,7 @@
 #### 1. Clone 代碼庫
 
 ```bash
-git clone https://github.com/SchoolSystemYiu/SchoolSystem.git
+git clone https://github.com/SchoolSystem/SchoolSystem.git
 cd SchoolSystem
 ```
 

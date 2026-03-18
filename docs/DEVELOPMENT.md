@@ -52,7 +52,7 @@ SchoolSystem/
 
 ```bash
 # 1. Clone 和進入目錄
-git clone https://github.com/SchoolSystemYiu/SchoolSystem.git
+git clone https://github.com/SchoolSystem/SchoolSystem.git
 cd SchoolSystem
 
 # 2. 創建虛擬環境
