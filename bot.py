@@ -260,15 +260,45 @@ async def slash_ask(interaction: discord.Interaction, question: str):
     e.set_footer(text=f"問：{question[:50]}")
     await interaction.followup.send(embed=e)
 
-@tree.command(name="study", description="生成今晚溫書計劃")
-async def slash_study(interaction: discord.Interaction):
+@tree.command(name="study", description="AI 生成溫書計劃")
+@app_commands.describe(days="計劃天數 (1/3/7, 預設3)")
+async def slash_study(interaction: discord.Interaction, days: int = 3):
     await interaction.response.defer()
-    hw  = get_hw(done=0)
-    exs = get_exams()
-    q = f"請根據以下功課{hw}同考試{exs}，生成今晚18:00後的溫書計劃，列出優先順序同時間分配，格式清晰。"
-    answer = await asyncio.get_event_loop().run_in_executor(None, ask_ai, q)
-    e = discord.Embed(title="📅 今晚溫書計劃", description=answer[:4000], color=0x0a84ff)
-    await interaction.followup.send(embed=e)
+    try:
+        from study_plan import generate_study_plan, get_today_priorities
+        # First show priorities (fast, no AI)
+        pri = get_today_priorities()
+        urgent_count = len(pri.get("urgent",[]))
+        tmr_count = len(pri.get("due_tomorrow",[]))
+        exam_count = len(pri.get("exams_soon",[]))
+        e = discord.Embed(title="⏳ 生成溫書計劃中...", color=0x5856d6)
+        if urgent_count: e.add_field(name="🔴 今日截止", value=f"{urgent_count}項", inline=True)
+        if tmr_count: e.add_field(name="🟡 明日截止", value=f"{tmr_count}項", inline=True)
+        if exam_count: e.add_field(name="📅 7日內考試", value=f"{exam_count}個", inline=True)
+        if pri.get("free_periods"):
+            e.add_field(name="🕐 今日空堂", value="、".join([p["type"] for p in pri["free_periods"]]), inline=False)
+        await interaction.followup.send(embed=e)
+        # Generate AI plan
+        result = await asyncio.get_event_loop().run_in_executor(None, generate_study_plan, days)
+        if result.get("error") == "no_key":
+            await interaction.followup.send("⚠️ 未設定 DEEPSEEK_API_KEY")
+            return
+        if result.get("error"):
+            await interaction.followup.send(f"❌ {result['error']}")
+            return
+        plan_text = result["plan"]
+        # Split if too long
+        if len(plan_text) > 3900:
+            plan_text = plan_text[:3900] + "..."
+        plan_embed = discord.Embed(
+            title=f"📅 {days}日溫書計劃",
+            description=plan_text,
+            color=0x0a84ff
+        )
+        plan_embed.set_footer(text=f"基於{len(result.get('context',{}).get('homeworks',[]))}項功課及考試時間表")
+        await interaction.followup.send(embed=plan_embed)
+    except Exception as ex:
+        await interaction.followup.send(f"❌ 錯誤：{ex}", ephemeral=True)
 
 @tree.command(name="cycle", description="查看今日係第幾 Day")
 async def slash_cycle(interaction: discord.Interaction):
