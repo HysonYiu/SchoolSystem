@@ -733,94 +733,68 @@ def check_update():
 @app.route("/admin/update")
 def do_update():
     if not admin_auth(request): return jsonify({"error":"unauthorized"}),401
-    import subprocess, urllib.request as urlreq
+    import subprocess
     base = os.path.dirname(os.path.abspath(__file__))
-    method_used = ""
-    errors = []
 
-    # Method 1: git pull (fastest, most reliable)
+    # ── COMPLETE GIT PULL (Full Update) ─────────────────────────────────────
+    # Fetch latest from GitHub
     try:
-        r = subprocess.run(
-            ["git", "-C", base, "pull", "origin", "main"],
+        fetch_result = subprocess.run(
+            ["git", "-C", base, "fetch", "origin", "main"],
             capture_output=True, text=True, timeout=30
         )
-        if r.returncode == 0:
-            method_used = "git pull"
-            updated = [l.strip() for l in r.stdout.split("\n") if "|" in l or "changed" in l]
-            if not updated: updated = ["(already up to date or pulled)"]
-            # Ensure start.sh is executable after pull
-            sh = os.path.join(base, "start.sh")
-            if os.path.exists(sh):
-                import stat
-                os.chmod(sh, os.stat(sh).st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-            def restart():
-                time.sleep(2)
-                import stat
-                base = os.path.dirname(os.path.abspath(__file__))
-                sh = os.path.join(base, "start.sh")
-                if os.path.exists(sh):
-                    os.chmod(sh, os.stat(sh).st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-                open(os.path.join(base, ".restart_requested"), "w").close()
-                os.kill(os.getpid(), 15)
-            threading.Thread(target=restart, daemon=True).start()
-            return jsonify({"ok":True,"method":method_used,"updated":updated,"msg":"Git pull OK, restarting..."})
-        else:
-            errors.append(f"git pull failed: {r.stderr.strip()}")
+        if fetch_result.returncode != 0:
+            return jsonify({
+                "error": "Cannot fetch from GitHub",
+                "details": fetch_result.stderr,
+                "hint": "Check internet connection or GitHub access"
+            }), 500
     except Exception as e:
-        errors.append(f"git error: {e}")
+        return jsonify({"error": f"Fetch error: {e}"}), 500
 
-    # Method 2: HTTP download from multiple mirrors
-    files = ["main.py","ui.py","timetable.py","recording.py","study_plan.py","bot.py","agent.py","start.sh","update_version.py","version.txt"]
-    mirrors = [
-        f"https://cdn.jsdelivr.net/gh/{GH_REPO}@main/",
-        f"https://raw.githubusercontent.com/{GH_REPO}/main/",
-        f"https://github.com/{GH_REPO}/raw/refs/heads/main/",
-    ]
-    updated = []
-    for fname in files:
-        content = None
-        last_err = ""
-        for mirror in mirrors:
-            try:
-                req = urlreq.Request(mirror+fname,
-                    headers={"User-Agent":"SchoolSystem-Updater/1.0","Cache-Control":"no-cache"})
-                with urlreq.urlopen(req, timeout=20) as r:
-                    content = r.read()
-                if content and len(content) > 10:
-                    break
-                content = None
-            except Exception as e:
-                last_err = str(e)
-                continue
-        if content:
-            fpath = os.path.join(base, fname)
-            if os.path.exists(fpath):
-                shutil.copy(fpath, fpath+".bak")
-            with open(fpath,"wb") as out:
-                out.write(content)
-            # Make shell scripts executable
-            if fname.endswith(".sh"):
-                import stat
-                os.chmod(fpath, os.stat(fpath).st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-            updated.append(fname)
-        else:
-            errors.append(f"{fname}: {last_err}")
+    # Hard reset to latest remote (discard any local changes)
+    try:
+        reset_result = subprocess.run(
+            ["git", "-C", base, "reset", "--hard", "origin/main"],
+            capture_output=True, text=True, timeout=30
+        )
+        if reset_result.returncode != 0:
+            return jsonify({
+                "error": "Reset failed",
+                "details": reset_result.stderr
+            }), 500
+    except Exception as e:
+        return jsonify({"error": f"Reset error: {e}"}), 500
 
-    if not updated:
-        return jsonify({
-            "error": "All download methods failed",
-            "details": errors,
-            "hint": "Check if Redmi can access github.com / cdn.jsdelivr.net"
-        }), 500
+    # Get list of changed files
+    try:
+        diff_result = subprocess.run(
+            ["git", "-C", base, "diff", "--name-only", "HEAD@{1}", "HEAD"],
+            capture_output=True, text=True, timeout=10
+        )
+        updated = diff_result.stdout.strip().split("\n") if diff_result.stdout.strip() else ["(Clean pull - all files updated)"]
+    except:
+        updated = ["(All files updated)"]
 
-    method_used = "HTTP download"
+    # Make all shell scripts executable
+    try:
+        import stat
+        for root, dirs, files in os.walk(base):
+            for f in files:
+                if f.endswith(".sh"):
+                    fpath = os.path.join(root, f)
+                    os.chmod(fpath, os.stat(fpath).st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+    except:
+        pass
+
+    # Restart after 2 seconds
     def restart():
         time.sleep(2)
         with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".restart_requested"), "w") as f:
             pass
         os.kill(os.getpid(), 15)
     threading.Thread(target=restart,daemon=True).start()
-    return jsonify({"ok":True,"method":method_used,"updated":updated,"errors":errors,"msg":"Restarting..."})
+    return jsonify({"ok":True,"method":"Full Git Reset","updated":updated,"msg":"✅ 完整更新完成，正在重啟..."})
 
 @app.route("/admin/rollback")
 def rollback():
