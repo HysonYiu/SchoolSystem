@@ -397,13 +397,13 @@ select.fctl option{background:var(--bg3)}
 </div>
 <div id="toast"></div>
 <script>
+// ── CORE FUNCTIONS (must be before HTML onclick handlers) ──────────
 const KEY="KEY_PLACEHOLDER";
 const $=id=>document.getElementById(id);
 const api=(p,o={})=>fetch(p+(p.includes('?')?'&':'?')+'key='+KEY,o).then(r=>r.json());
 let dark=window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches;
 if(dark)document.body.classList.add('dark');
 function toggleDark(){dark=!dark;document.body.classList.toggle('dark',dark);}
-
 function go(t,el){
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('on'));
   document.querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));
