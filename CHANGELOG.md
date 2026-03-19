@@ -8,10 +8,18 @@
   - 設定 `ESP8266_IP` 環境變數
   - JavaScript 前端集成，實時反饋
 
+- 🔄 **完整 Git 重置更新系統** - 真正的「一鍵完整更新」
+  - 用 `git fetch + git reset --hard` 替換不完整的 HTTP 備用方案
+  - **更新所有文件**：main.py、docs、.github、templates、所有配置文件
+  - 移除不可靠的多鏡像 HTTP 下載
+  - 所有 shell 腳本自動設定可執行權限
+  - 更好的錯誤報告和反饋訊息
+
 ### 技術細節
 - 透過 ESP8266 HTTP 服務轉發 Magic Packet
 - 支援 UDP 廣播喚醒 (Port 9)
 - Admin 認證保護，防止濫用
+- 更新系統：完整 Git Workflow (Fetch → Reset → Validate → Restart)
 
 ---
 
