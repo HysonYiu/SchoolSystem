@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.0.0-alpha.11] - 2026-03-19 🔥 CRITICAL FIX
+### 修復
+- 🐛 **解決 JavaScript 模塊缓存問題** - 前端按鈕無法加載
+  - 清除 Python bytecode 缓存防止舊版本加載
+  - 確保 ui.py 腳本標籤在 HTML body 之前加載
+  - script tag 現在正確位置在 `</style>` 和 `</head>` 之間
+  - 所有導航按鈕、深色模式、功能完全恢復
+
+### 影響
+- ✅ 前端完全恢復正常運作
+- ✅ 所有 onclick 處理器正確引用函數
+- ✅ 錯誤處理系統正常顯示 JavaScript 錯誤
+
+---
+
 ## [2.0.0-alpha.10-hotfix.1] - 2026-03-19 🔥 HOTFIX
 ### 新增
 - 🚀 **現代化更新系統** - 全新設計的版本管理
