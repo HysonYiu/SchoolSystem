@@ -1,15 +1,28 @@
 # Changelog
 
 ## [2.0.0-alpha.10-hotfix.1] - 2026-03-19 🔥 HOTFIX
+### 新增
+- 🚀 **現代化更新系統** - 全新設計的版本管理
+  - 版本渠道選擇：Alpha（最新） / Beta（穩定） / Stable
+  - 改進的 Admin Panel 更新 UI
+  - 更清晰的版本信息顯示
+  - 更好的錯誤報告和詳細信息
+
 ### 修復
 - 🐛 **修復前端 JavaScript 錯誤** - "go is not defined"
   - HTML 按鈕 onclick 屬性在腳本定義前被解析
   - 移動核心函數定義到腳本頂部
   - 確保 go(), goB(), toggleDark() 在頁面加載時可用
 
+### 更新
+- 📝 版本號更新至 2.0.0-alpha.10-hotfix.1
+- 🎨 改進 Admin Panel 樣式和互動
+
 ### 影響
 - ✅ 所有導航按鈕（主頁、時間表、功課等）現在正常工作
 - ✅ 深色模式切換按鈕恢復正常
+- ✅ 可以選擇 Alpha 版本接收最新功能
+- ✅ 完整的 Git reset 更新系統
 
 ---
 

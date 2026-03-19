@@ -229,7 +229,8 @@ pytest tests/ -v --cov=.
 | Discord Bot | ✅ 完成 | 所有 Slash Commands |
 | AI 助手 | ✅ 完成 | DeepSeek 整合 |
 | Wake-On-LAN | ✅ 完成 | ESP8266 遠程開機 |
-| 完整更新系統 | ✅ 完成 | Git Reset 一鍵完整更新 |
+| 完整更新系統 | ✅ 完成 | 現代化 Git Reset，版本渠道選擇 |
+| 版本管理 | ✅ 完成 | Alpha/Beta/Stable 版本選擇 |
 | Windows 部署 | ✅ 完成 | run.bat 後台運行 |
 | 標準化 | ✅ 完成 | 依賴管理、代碼風格、CI/CD |
 | 文檔 | ✅ 完成 | API、架構、開發指南 |
