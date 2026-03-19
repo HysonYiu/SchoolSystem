@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.0.0-alpha.10-hotfix.1] - 2026-03-19 🔥 HOTFIX
+### 修復
+- 🐛 **修復前端 JavaScript 錯誤** - "go is not defined"
+  - HTML 按鈕 onclick 屬性在腳本定義前被解析
+  - 移動核心函數定義到腳本頂部
+  - 確保 go(), goB(), toggleDark() 在頁面加載時可用
+
+### 影響
+- ✅ 所有導航按鈕（主頁、時間表、功課等）現在正常工作
+- ✅ 深色模式切換按鈕恢復正常
+
+---
+
 ## [2.0.0-alpha.10] - 2026-03-19 🧪 ALPHA
 ### 新增
 - ⚡ **Wake-On-LAN (WOL) 整合** - 支援 ESP8266 遠程喚醒 PC
