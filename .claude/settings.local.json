@@ -5,7 +5,29 @@
       "Bash(grep -r \"import\\\\|from\" \"/c/Users/user/Downloads/SchoolSystem\"/*.py)",
       "Bash(wc:*)",
       "Bash(find /c/Users/user/Downloads/SchoolSystem -maxdepth 2 -type f \\\\\\(-name *.md -o -name *.txt -o -name .env* -o -name *.toml -o -name *.cfg -o -name *.ini -o -name .yaml -o -name .yml -o -name .gitignore \\\\\\))",
-      "Bash(grep -h \"^import\\\\|^from\" *.py)"
+      "Bash(grep -h \"^import\\\\|^from\" *.py)",
+      "Bash(xargs -r git update-ref -d)",
+      "Bash(rm -rf .git/refs/original)",
+      "Bash(grep -r \"Hyson\\\\|HysonYiu\\\\|Wing Kwong\" . --include=*.py --include=*.md)",
+      "WebFetch(domain:github.com)",
+      "Bash(gh repo:*)",
+      "Bash(gh api:*)",
+      "Bash(gh run:*)",
+      "Bash(gh release:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git pull:*)",
+      "Bash(pip --version)",
+      "Bash(python:*)",
+      "Bash(tasklist)",
+      "Bash(findstr \"python\")",
+      "Bash(curl -v http://192.168.68.53:8081/)",
+      "Bash(curl:*)",
+      "Bash(taskkill:*)",
+      "Bash(pkill:*)",
+      "Bash(kill -9 724 805 817)",
+      "Bash(python3 -m py_compile ui.py)"
     ]
   }
 }

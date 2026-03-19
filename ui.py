@@ -586,7 +586,7 @@ async function handleWB(input){
       $('wb-status').textContent='✅ AI 識別到 '+r.homeworks.length+' 項功課，撳加入：';
       html+=r.homeworks.map((h,i)=>{
         const hj=encodeURIComponent(JSON.stringify(h));
-        return'<div class="wb-hw" onclick="addWBHWOne(''+hj+'')">'+
+        return'<div class="wb-hw" data-hw="'+hj+'" onclick="addWBHWOne(this.dataset.hw)">'+
           '<div style="display:flex;align-items:center;gap:8px">'+sb(h.subject||'CHI')+
           '<div><div class="wb-hw-title">'+(h.title||'未識別標題')+'</div>'+
           (h.due_date?'<div class="wb-hw-meta">截止：'+h.due_date+'</div>':'')+
