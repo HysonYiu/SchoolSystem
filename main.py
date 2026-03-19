@@ -29,6 +29,7 @@ HOST         = os.getenv("BIND_HOST", "0.0.0.0")
 DEEPSEEK_KEY = os.getenv("DEEPSEEK_API_KEY", "")
 GH_REPO      = os.getenv("GITHUB_REPO", "HysonYiu/SchoolSystem")
 GH_TOKEN     = os.getenv("GITHUB_TOKEN", "")
+ESP8266_IP   = os.getenv("ESP8266_IP", "")
 
 from recording import recording_bp
 app.register_blueprint(recording_bp)
@@ -456,6 +457,7 @@ textarea{width:100%;background:#2c2c2e;border:1px solid rgba(255,255,255,.1);col
     <div class="btns">
       <button class="btn b-gray" onclick="doRst()">🔄 重啟服務</button>
       <button class="btn b-red" onclick="doRollback()">↩️ 回滾版本</button>
+      <button class="btn b-blue" onclick="doWOL()">⚡ 開機 PC</button>
     </div>
     <div id="quick-msg" style="font-size:13px;color:#636366;margin-top:10px;min-height:18px"></div>
   </div>
@@ -623,6 +625,17 @@ async function clrLog(){
   await adm('/admin/logs/clear');
   document.getElementById('log-box').textContent='已清除';
 }
+
+async function doWOL(){
+  const m=document.getElementById('quick-msg');
+  m.textContent='發送中...';m.style.color='';
+  try{
+    const r=await adm('/admin/wol',{method:'POST'});
+    m.textContent=r.ok?'✅ Magic Packet 已發送':'❌ '+(r.error||'失敗');
+    m.style.color=r.ok?'var(--grn)':'var(--red)';
+  }catch(e){m.textContent='❌ 網絡錯誤';m.style.color='var(--red)';}
+}
+
 init();
 </script></body></html>"""
 
@@ -855,6 +868,17 @@ def logs_clear():
     db.execute("DELETE FROM access_log")
     db.commit()
     return jsonify({"ok":True})
+
+@app.route("/admin/wol", methods=["POST"])
+def admin_wol():
+    if not admin_auth(request): return jsonify({"error":"unauthorized"}),401
+    if not ESP8266_IP: return jsonify({"error":"ESP8266_IP not set in .env"}),400
+    import requests as req
+    try:
+        r = req.post(f"http://{ESP8266_IP}/wol", timeout=5)
+        return jsonify({"ok": True, "msg": "Magic packet sent"})
+    except Exception as e:
+        return jsonify({"error": str(e)}),500
 
 
 # ── Whiteboard ────────────────────────────────────────────────────────────────
