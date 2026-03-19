@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 from flask import Flask, Response, g, jsonify, make_response, redirect, request
 
 load_dotenv()
-__version__ = "2.0.0-alpha.2"
+__version__ = "2.0.0-alpha.9"
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 100 * 1024 * 1024  # 100 MB for audio uploads
@@ -27,6 +27,8 @@ except ValueError:
     PORT = 8081
 HOST         = os.getenv("BIND_HOST", "0.0.0.0")
 DEEPSEEK_KEY = os.getenv("DEEPSEEK_API_KEY", "")
+POE_KEY      = os.getenv("POE_API_KEY", "")
+POE_KEY      = os.getenv("POE_API_KEY", "")
 GH_REPO      = os.getenv("GITHUB_REPO", "HysonYiu/SchoolSystem")
 GH_TOKEN     = os.getenv("GITHUB_TOKEN", "")
 ESP8266_IP   = os.getenv("ESP8266_IP", "")
@@ -316,8 +318,8 @@ def stats():
 @app.route("/api/ai/ask", methods=["POST"])
 def ai_ask():
     if not auth(request): return jsonify({"error":"unauthorized"}),401
-    if not DEEPSEEK_KEY:
-        return jsonify({"error":"no_key","msg":"請先設定 DEEPSEEK_API_KEY"}),503
+    if not DEEPSEEK_KEY and not POE_KEY:
+        return jsonify({"error":"no_key","msg":"請先設定 DEEPSEEK_API_KEY 或 POE_API_KEY"}),503
     d = request.get_json()
     q = (d or {}).get("question","")
     if not q: return jsonify({"error":"empty"}),400
@@ -326,19 +328,44 @@ def ai_ask():
     exams = db.execute("SELECT subject,title,exam_date FROM exams WHERE exam_date>=date('now') ORDER BY exam_date ASC LIMIT 5").fetchall()
     get_cycle_day, _, _ = _get_cycle_and_school()
     ctx = f"今日 {date.today().isoformat()}，Cycle Day {get_cycle_day()}。未完成功課：{[dict(h) for h in hw]}。考試：{[dict(e) for e in exams]}。"
-    try:
-        import urllib.request as urlreq
-        payload = json.dumps({"model":"deepseek-reasoner","max_tokens":800,"messages":[
-            {"role":"system","content":"你係香港中學生學習助手，熟悉 DSE。用廣東話回答，簡潔清晰。背景："+ctx},
-            {"role":"user","content":q}
-        ]}).encode()
-        req = urlreq.Request("https://api.deepseek.com/chat/completions", data=payload,
-            headers={"Content-Type":"application/json","Authorization":f"Bearer {DEEPSEEK_KEY}"}, method="POST")
-        with urlreq.urlopen(req, timeout=30) as r:
-            result = json.loads(r.read())
-        return jsonify({"ok":True,"answer":result["choices"][0]["message"]["content"]})
-    except Exception as e:
-        return jsonify({"error":str(e)}),500
+    sys_msg = "你係香港中學生學習助手，熟悉 DSE。用廣東話回答，簡潔清晰。背景：" + ctx
+    import urllib.request as urlreq
+
+    # Method 1: Poe API (Gemini-2.5-Flash — fast + smart)
+    if POE_KEY:
+        try:
+            payload = json.dumps({
+                "model": "Gemini-2.5-Flash",
+                "max_tokens": 800,
+                "messages": [
+                    {"role": "system", "content": sys_msg},
+                    {"role": "user",   "content": q}
+                ]
+            }).encode()
+            req = urlreq.Request("https://api.poe.com/v1/chat/completions", data=payload,
+                headers={"Content-Type":"application/json","Authorization":f"Bearer {POE_KEY}"}, method="POST")
+            with urlreq.urlopen(req, timeout=30) as r:
+                result = json.loads(r.read())
+            return jsonify({"ok":True,"answer":result["choices"][0]["message"]["content"],"model":"Poe/Gemini-2.5-Flash"})
+        except Exception as e:
+            pass  # Fall through to DeepSeek
+
+    # Method 2: DeepSeek Reasoner fallback
+    if DEEPSEEK_KEY:
+        try:
+            payload = json.dumps({"model":"deepseek-reasoner","max_tokens":800,"messages":[
+                {"role":"system","content":sys_msg},
+                {"role":"user","content":q}
+            ]}).encode()
+            req = urlreq.Request("https://api.deepseek.com/chat/completions", data=payload,
+                headers={"Content-Type":"application/json","Authorization":f"Bearer {DEEPSEEK_KEY}"}, method="POST")
+            with urlreq.urlopen(req, timeout=30) as r:
+                result = json.loads(r.read())
+            return jsonify({"ok":True,"answer":result["choices"][0]["message"]["content"],"model":"DeepSeek-Reasoner"})
+        except Exception as e:
+            return jsonify({"error":str(e)}),500
+
+    return jsonify({"error":"all_failed"}),500
 
 @app.route("/api/ai/study_plan", methods=["POST"])
 def ai_study_plan():
@@ -721,12 +748,21 @@ def do_update():
             method_used = "git pull"
             updated = [l.strip() for l in r.stdout.split("\n") if "|" in l or "changed" in l]
             if not updated: updated = ["(already up to date or pulled)"]
+            # Ensure start.sh is executable after pull
+            sh = os.path.join(base, "start.sh")
+            if os.path.exists(sh):
+                import stat
+                os.chmod(sh, os.stat(sh).st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
             def restart():
                 time.sleep(2)
-                with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".restart_requested"), "w") as f:
-                    pass
+                import stat
+                base = os.path.dirname(os.path.abspath(__file__))
+                sh = os.path.join(base, "start.sh")
+                if os.path.exists(sh):
+                    os.chmod(sh, os.stat(sh).st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+                open(os.path.join(base, ".restart_requested"), "w").close()
                 os.kill(os.getpid(), 15)
-            threading.Thread(target=restart,daemon=True).start()
+            threading.Thread(target=restart, daemon=True).start()
             return jsonify({"ok":True,"method":method_used,"updated":updated,"msg":"Git pull OK, restarting..."})
         else:
             errors.append(f"git pull failed: {r.stderr.strip()}")
@@ -734,7 +770,7 @@ def do_update():
         errors.append(f"git error: {e}")
 
     # Method 2: HTTP download from multiple mirrors
-    files = ["main.py","ui.py","timetable.py","recording.py","version.txt"]
+    files = ["main.py","ui.py","timetable.py","recording.py","study_plan.py","bot.py","agent.py","start.sh","update_version.py","version.txt"]
     mirrors = [
         f"https://cdn.jsdelivr.net/gh/{GH_REPO}@main/",
         f"https://raw.githubusercontent.com/{GH_REPO}/main/",
@@ -762,6 +798,10 @@ def do_update():
                 shutil.copy(fpath, fpath+".bak")
             with open(fpath,"wb") as out:
                 out.write(content)
+            # Make shell scripts executable
+            if fname.endswith(".sh"):
+                import stat
+                os.chmod(fpath, os.stat(fpath).st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
             updated.append(fname)
         else:
             errors.append(f"{fname}: {last_err}")
@@ -889,44 +929,110 @@ def whiteboard_upload():
     if "file" not in request.files:
         return jsonify({"error":"no file"}),400
     f = request.files["file"]
-    import base64
-    img_data = base64.b64encode(f.read()).decode()
-    ext = "jpeg"
-    if f.filename.lower().endswith(".png"): ext = "png"
-    elif f.filename.lower().endswith(".heic"): ext = "heic"
+    import base64, urllib.request as urlreq, json as _json, re as _re
+    raw_bytes = f.read()
+    img_data = base64.b64encode(raw_bytes).decode()
+
+    fname_lower = (f.filename or "").lower()
+    ext  = "png" if fname_lower.endswith(".png") else "jpg"
+    mime = "image/png" if ext == "png" else "image/jpeg"
+
+    # Save to disk
     wb_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "whiteboards")
     os.makedirs(wb_dir, exist_ok=True)
-    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    ts    = datetime.now().strftime("%Y%m%d_%H%M%S")
     fpath = os.path.join(wb_dir, f"{ts}.{ext}")
     with open(fpath, "wb") as out:
-        out.write(base64.b64decode(img_data))
-    result = {"ok":True,"filename":f"{ts}.{ext}","b64":img_data,"ext":ext}
-    if DEEPSEEK_KEY:
-        try:
-            import urllib.request as urlreq, json as _json
-            payload = _json.dumps({"model":"deepseek-chat","max_tokens":600,
-                "messages":[{"role":"user","content":[
-                    {"type":"text","text":'呢張係香港中學白板嘅功課記錄，請提取所有功課項目，每項包括：科目、功課描述、截止日期（如有）。用JSON格式回覆，格式：{"homeworks":[{"subject":"","title":"","due_date":""}]}。如果睇唔清就返回空list。'},
-                    {"type":"image_url","image_url":{"url":f"data:image/{ext};base64,{img_data}"}}
-                ]}]}).encode()
-            req = urlreq.Request("https://api.deepseek.com/chat/completions",
-                data=payload,
-                headers={"Content-Type":"application/json","Authorization":f"Bearer {DEEPSEEK_KEY}"},
-                method="POST")
-            with urlreq.urlopen(req, timeout=30) as r:
-                resp = _json.loads(r.read())
-            text = resp["choices"][0]["message"]["content"]
+        out.write(raw_bytes)
+
+    result = {"ok": True, "filename": f"{ts}.{ext}", "ext": ext, "homeworks": []}
+
+    PROMPT = (
+        "呢張係香港中學白板嘅功課記錄。"
+        "請提取所有功課項目，每項包括：科目(CHEM/MATH/M2/ENG/CHI/ICT/LS其中一個)、"
+        "功課描述、截止日期(格式YYYY-MM-DD，如無則空字串)。"
+        "只用JSON格式回覆，唔好有任何其他文字。"
+        'JSON格式：{"homeworks":[{"subject":"MATH","title":"P.10 Q3","due_date":"2026-03-20"}]}'
+        '如果冇功課，返回：{"homeworks":[]}'
+    )
+
+    # ── Method 1: Poe API — Gemini-2.5-Flash vision (OpenAI-compat) ─────────
+    if POE_KEY:
+        # Poe OpenAI-compatible API: https://api.poe.com/v1
+        # Try Gemini 2.5 Flash first, fallback to 2.0 Flash
+        poe_models = ["Gemini-2.5-Flash", "Gemini-2.0-Flash"]
+        for poe_model in poe_models:
             try:
-                import re as _re
+                payload = _json.dumps({
+                    "model": poe_model,
+                    "max_tokens": 800,
+                    "messages": [{
+                        "role": "user",
+                        "content": [
+                            {"type": "image_url",
+                             "image_url": {"url": f"data:{mime};base64,{img_data}"}},
+                            {"type": "text", "text": PROMPT}
+                        ]
+                    }]
+                }).encode()
+                req = urlreq.Request(
+                    "https://api.poe.com/v1/chat/completions",
+                    data=payload,
+                    headers={
+                        "Content-Type":  "application/json",
+                        "Authorization": f"Bearer {POE_KEY}",
+                    },
+                    method="POST"
+                )
+                with urlreq.urlopen(req, timeout=30) as r:
+                    resp = _json.loads(r.read())
+                text = resp["choices"][0]["message"]["content"].strip()
                 m = _re.search(r'\{.*\}', text, _re.DOTALL)
                 if m:
                     parsed = _json.loads(m.group())
-                    result["homeworks"] = parsed.get("homeworks",[])
-                    result["raw"] = text
-            except (json.JSONDecodeError, ValueError):
-                result["raw"] = text
-        except Exception as e:
-            result["ai_error"] = str(e)
+                    result["homeworks"] = parsed.get("homeworks", [])
+                    result["ai_model"]  = f"Poe/{poe_model}"
+                    return jsonify(result)
+                else:
+                    result.setdefault("ai_errors", []).append(
+                        f"Poe/{poe_model}: no JSON — {text[:80]}")
+            except Exception as e:
+                result.setdefault("ai_errors", []).append(f"Poe/{poe_model}: {e}")
+                continue
+
+    # ── Method 2: DeepSeek fallback ───────────────────────────────────────────
+    if DEEPSEEK_KEY:
+        for model in ["deepseek-vl2", "deepseek-vl", "deepseek-chat"]:
+            try:
+                payload = _json.dumps({
+                    "model": model, "max_tokens": 800,
+                    "messages": [{"role": "user", "content": [
+                        {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{img_data}"}},
+                        {"type": "text", "text": PROMPT}
+                    ]}]
+                }).encode()
+                req = urlreq.Request(
+                    "https://api.deepseek.com/chat/completions",
+                    data=payload,
+                    headers={"Content-Type": "application/json",
+                             "Authorization": f"Bearer {DEEPSEEK_KEY}"},
+                    method="POST"
+                )
+                with urlreq.urlopen(req, timeout=30) as r:
+                    resp = _json.loads(r.read())
+                text = resp["choices"][0]["message"]["content"].strip()
+                m = _re.search(r'\{.*\}', text, _re.DOTALL)
+                if m:
+                    parsed = _json.loads(m.group())
+                    result["homeworks"] = parsed.get("homeworks", [])
+                    result["ai_model"]  = f"DeepSeek/{model}"
+                    return jsonify(result)
+            except Exception as e:
+                result.setdefault("ai_errors", []).append(f"{model}: {e}")
+                continue
+
+    # ── No AI available ───────────────────────────────────────────────────────
+    result["ai_note"] = "未設定 Poe/DeepSeek API Key，請手動輸入功課"
     return jsonify(result)
 
 

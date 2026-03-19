@@ -582,6 +582,7 @@ async function delExam(id){
 // ── Whiteboard ────────────────────────────────────────────────────────────────
 async function handleWB(input){
   const file=input.files[0];if(!file)return;
+  // Show image preview immediately
   const url=URL.createObjectURL(file);
   $('wb-img').src=url;$('wb-preview').style.display='block';
   $('wb-results').innerHTML='';
@@ -590,27 +591,65 @@ async function handleWB(input){
   try{
     const r=await fetch('/api/whiteboard/upload?key='+KEY,{method:'POST',body:fd}).then(x=>x.json());
     if(!r.ok){$('wb-status').textContent='❌ 上載失敗：'+(r.error||'');return;}
+
+    let html='';
+
+    // AI results
     if(r.homeworks&&r.homeworks.length>0){
       $('wb-status').textContent='✅ AI 識別到 '+r.homeworks.length+' 項功課，撳加入：';
-      $('wb-results').innerHTML=r.homeworks.map((h,i)=>
-        '<div class="wb-hw" onclick="addWBHW('+i+','+JSON.stringify(r.homeworks).replace(/</g,'&lt;').replace(/"/g,'&quot;')+')" >'+
-        '<div class="wb-hw-title">'+(h.title||'（未識別標題）')+'</div>'+
-        '<div class="wb-hw-meta">'+sb(h.subject||'CHI')+(h.due_date?' · '+h.due_date:'')+'</div></div>'
-      ).join('');
-    }else if(r.raw){
-      $('wb-status').textContent='AI 回覆：';
-      $('wb-results').innerHTML='<div style="font-size:13px;color:var(--text2);padding:10px;background:var(--bg4);border-radius:8px;white-space:pre-wrap">'+r.raw+'</div>';
+      html+=r.homeworks.map((h,i)=>{
+        const hj=encodeURIComponent(JSON.stringify(h));
+        return'<div class="wb-hw" onclick="addWBHWOne(''+hj+'')">'+
+          '<div style="display:flex;align-items:center;gap:8px">'+sb(h.subject||'CHI')+
+          '<div><div class="wb-hw-title">'+(h.title||'未識別標題')+'</div>'+
+          (h.due_date?'<div class="wb-hw-meta">截止：'+h.due_date+'</div>':'')+
+          '</div></div></div>';
+      }).join('');
+    }else if(r.ai_note){
+      $('wb-status').textContent='📷 圖片已儲存 · '+r.ai_note;
+    }else if(r.ai_errors){
+      $('wb-status').textContent='⚠️ AI 識別失敗，請手動輸入';
     }else{
-      $('wb-status').textContent='✅ 圖片已儲存（需要設定 AI Key 才能自動識別）';
+      $('wb-status').textContent='📷 圖片已儲存';
     }
+
+    // Always show manual entry form
+    html+='<div style="margin-top:14px;padding:14px;background:var(--bg4);border-radius:var(--rsm)">'+
+      '<div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:10px">✏️ 手動加入功課</div>'+
+      '<div style="display:flex;gap:8px;margin-bottom:8px">'+
+        '<select id="wb-subj" style="flex:1;background:var(--bg3);border:none;color:var(--text);padding:9px;border-radius:8px;font-family:inherit;font-size:14px;outline:none">'+
+          '<option>CHEM</option><option>MATH</option><option>M2</option><option>ENG</option>'+
+          '<option>CHI</option><option>ICT</option><option>LS</option><option>LIFE-ED</option>'+
+        '</select>'+
+        '<input id="wb-due" type="date" style="flex:1;background:var(--bg3);border:none;color:var(--text);padding:9px;border-radius:8px;font-family:inherit;font-size:14px;outline:none">'+
+      '</div>'+
+      '<input id="wb-title" placeholder="功課描述" style="width:100%;background:var(--bg3);border:none;color:var(--text);padding:10px;border-radius:8px;font-family:inherit;font-size:14px;outline:none;margin-bottom:8px">'+
+      '<button onclick="addWBManual()" style="width:100%;padding:12px;border-radius:8px;border:none;background:var(--blue);color:#fff;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit">加入功課表</button>'+
+    '</div>';
+
+    $('wb-results').innerHTML=html;
   }catch(e){$('wb-status').textContent='❌ '+e.message;}
   input.value='';
 }
-async function addWBHW(idx,hws){
-  const h=hws[idx];
+
+async function addWBHWOne(hj){
+  const h=JSON.parse(decodeURIComponent(hj));
   await api('/api/hw',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({title:h.title||'白板功課',subject:h.subject||'CHI',due_date:h.due_date||'',source:'白板拍照',priority:'中'})});
-  toast('📥 已加入：'+( h.title||'白板功課'));
+    body:JSON.stringify({title:h.title||'白板功課',subject:h.subject||'CHI',
+      due_date:h.due_date||'',source:'白板拍照',priority:'中'})});
+  toast('📥 已加入：'+(h.title||'白板功課'));
+}
+
+async function addWBManual(){
+  const title=$('wb-title')?.value.trim();
+  if(!title){toast('⚠️ 請輸入功課描述');return;}
+  const subj=$('wb-subj')?.value||'CHI';
+  const due=$('wb-due')?.value||'';
+  await api('/api/hw',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({title,subject:subj,due_date:due,source:'白板拍照',priority:'中'})});
+  toast('📥 已加入：'+title);
+  if($('wb-title'))$('wb-title').value='';
+  if($('wb-due'))$('wb-due').value='';
 }
 
 // ── Recording ─────────────────────────────────────────────────────────────────
@@ -707,7 +746,7 @@ async function aiStudyPlan(days=3){
       body:JSON.stringify({days})});
     loading.style.display='none';
     if(r.error==='no_key'){
-      text.textContent='⚠️ 請先在管理員介面設定 DEEPSEEK_API_KEY';
+      text.textContent='⚠️ 請先在管理員介面設定 POE_API_KEY 或 DEEPSEEK_API_KEY';
     }else if(r.ok){
       text.textContent=r.plan;
     }else{
@@ -765,35 +804,91 @@ async function loadStats(){
   ).join(''):'<div class="empty"><div class="empt">暫無數據</div></div>';
 }
 
-// ── Global error handler ───────────────────────────────────────────────────
+// ── Global error handler ────────────────────────────────────────────────────
+window._lastErr = '';
 window.onerror = function(msg, src, line, col, err){
-  showErrBanner(msg + (src?' ('+src+':'+line+')':''));
+  const full = msg + (src ? ' \n位置: '+src+':'+line : '') + (err?.stack ? '\n'+err.stack : '');
+  showErrBanner(full);
   return false;
 };
 window.onunhandledrejection = function(e){
-  showErrBanner('Unhandled promise: '+(e.reason?.message||e.reason||'unknown'));
+  showErrBanner('Promise 錯誤: '+(e.reason?.message||String(e.reason)||'unknown'));
 };
+
 function showErrBanner(msg){
-  let el=document.getElementById('err-banner');
-  if(!el){
-    el=document.createElement('div');el.id='err-banner';
-    el.style.cssText='position:fixed;bottom:0;left:0;right:0;background:#1c1414;border-top:1px solid #ff453a;padding:12px 16px;z-index:999;font-size:13px;color:#ff453a;display:flex;align-items:center;gap:10px;-webkit-backdrop-filter:blur(10px)';
-    el.innerHTML='<span style="flex:1" id="err-txt"></span>'+
-      '<button onclick="copyErr()" style="background:rgba(255,69,58,.2);border:none;color:#ff453a;padding:5px 12px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:12px;flex-shrink:0">複製</button>'+
-      '<button onclick="this.parentElement.remove()" style="background:none;border:none;color:#636366;cursor:pointer;font-size:18px;flex-shrink:0">×</button>';
-    document.body.appendChild(el);
+  window._lastErr = msg;
+  const banner = document.getElementById('err-banner');
+  const bmsg = document.getElementById('err-banner-msg');
+  if(banner && bmsg){
+    bmsg.textContent = '⚠️ ' + msg.split('\n')[0].slice(0,80);
+    banner.style.display = 'flex';
   }
-  document.getElementById('err-txt').textContent='⚠️ '+msg;
-  el.style.display='flex';
-  window._lastErr=msg;
 }
-function copyErr(){
-  if(navigator.clipboard)navigator.clipboard.writeText(window._lastErr||'');
-  else{const t=document.createElement('textarea');t.value=window._lastErr||'';document.body.appendChild(t);t.select();document.execCommand('copy');t.remove();}
-  toast('✅ 已複製錯誤訊息');
+
+function showErrOverlay(msg){
+  const el = document.getElementById('err-overlay');
+  const em = document.getElementById('err-msg');
+  if(el && em){ em.textContent = msg || window._lastErr || '未知錯誤'; el.style.display = 'block'; }
+}
+
+function closeErrOverlay(){
+  document.getElementById('err-overlay').style.display = 'none';
+  document.getElementById('sys-log-section').style.display = 'none';
+}
+
+function copyErrMsg(){
+  const txt = document.getElementById('err-msg')?.textContent || window._lastErr;
+  if(navigator.clipboard) navigator.clipboard.writeText(txt);
+  else{const t=document.createElement('textarea');t.value=txt;document.body.appendChild(t);t.select();document.execCommand('copy');t.remove();}
+  toast('✅ 已複製');
+}
+
+async function loadSysLog(){
+  const sec = document.getElementById('sys-log-section');
+  const content = document.getElementById('sys-log-content');
+  sec.style.display = 'block';
+  content.textContent = '載入中...';
+  try{
+    const r = await fetch('/admin/logfile?admin=' + encodeURIComponent(document.cookie.match(/admin=([^;]+)/)?.[1]||''));
+    const d = await r.json();
+    content.textContent = d.content || '(空)';
+    content.scrollTop = content.scrollHeight;
+  }catch(e){
+    content.textContent = '無法載入 log：' + e.message + '\n請到 /admin 查看日誌';
+  }
 }
 
 loadDash();
 </script>
+
+<!-- System Error Overlay -->
+<div id="err-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);z-index:9999;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);padding:20px;overflow-y:auto">
+  <div style="max-width:700px;margin:0 auto;background:var(--bg3);border-radius:var(--r);overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.5)">
+    <div style="background:#1a0a0a;padding:14px 18px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,69,58,.3)">
+      <span style="font-size:16px">⚠️</span>
+      <span style="font-size:15px;font-weight:600;color:#ff453a;flex:1">系統錯誤</span>
+      <button onclick="closeErrOverlay()" style="background:rgba(255,255,255,.1);border:none;color:#fff;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center">×</button>
+    </div>
+    <div style="padding:16px">
+      <div id="err-msg" style="font-size:14px;color:#ff453a;font-family:monospace;background:#1a0a0a;padding:12px;border-radius:8px;margin-bottom:14px;white-space:pre-wrap;word-break:break-all"></div>
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+        <button onclick="copyErrMsg()" style="padding:8px 14px;border-radius:8px;border:none;background:rgba(255,69,58,.15);color:#ff453a;cursor:pointer;font-family:inherit;font-size:13px;font-weight:500">📋 複製錯誤</button>
+        <button onclick="loadSysLog()" style="padding:8px 14px;border-radius:8px;border:none;background:var(--bg4);color:var(--text2);cursor:pointer;font-family:inherit;font-size:13px;font-weight:500">📄 查看系統 Log</button>
+        <button onclick="location.reload()" style="padding:8px 14px;border-radius:8px;border:none;background:var(--bg4);color:var(--text2);cursor:pointer;font-family:inherit;font-size:13px;font-weight:500">🔄 刷新頁面</button>
+      </div>
+      <div id="sys-log-section" style="display:none">
+        <div style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">系統日誌 (最後50行)</div>
+        <div id="sys-log-content" style="background:#0a0a0a;border-radius:8px;padding:12px;font-size:11px;font-family:monospace;color:#aeaeb2;max-height:300px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;line-height:1.6"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Bottom error banner (for non-fatal errors) -->
+<div id="err-banner" style="display:none;position:fixed;bottom:calc(env(safe-area-inset-bottom,0px) + 70px);left:12px;right:12px;background:#1c0a0a;border:1px solid rgba(255,69,58,.4);border-radius:12px;padding:12px 14px;z-index:498;display:none;align-items:center;gap:10px;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)">
+  <span style="font-size:14px;color:#ff453a;flex:1;font-size:13px;font-weight:500" id="err-banner-msg"></span>
+  <button onclick="showErrOverlay(window._lastErr)" style="background:rgba(255,69,58,.2);border:none;color:#ff453a;padding:4px 10px;border-radius:7px;cursor:pointer;font-family:inherit;font-size:12px;flex-shrink:0">詳情</button>
+  <button onclick="document.getElementById('err-banner').style.display='none'" style="background:none;border:none;color:#636366;cursor:pointer;font-size:18px;flex-shrink:0;padding:0 4px">×</button>
+</div>
 </body>
 </html>"""
