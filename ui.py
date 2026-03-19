@@ -147,6 +147,16 @@ select.fctl option{background:var(--bg3)}
   body{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 70px)}
 }
 </style>
+<script>
+// ── CRITICAL: Define functions BEFORE HTML parsing ──────────────────────
+const KEY="KEY_PLACEHOLDER";
+const $=id=>document.getElementById(id);
+let dark=window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches;
+if(dark)document.body.classList.add('dark');
+function toggleDark(){dark=!dark;document.body.classList.toggle('dark',dark);}
+function go(t,el){document.querySelectorAll('.section').forEach(s=>s.classList.remove('on'));document.querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));$('s-'+t).classList.add('on');if(el)el.classList.add('on');if(t==='dash')loadDash();else if(t==='tt')loadTT(0);else if(t==='hw')loadHW();else if(t==='exam'){loadExams();examSeg('list');}else if(t==='stats')loadStats();else if(t==='rec')loadRecList();else if(t==='ai'){loadPriorities();}}
+function goB(t,el){document.querySelectorAll('.bt').forEach(b=>b.classList.remove('on'));el.classList.add('on');go(t,null);}
+</script>
 </head>
 <body>
 <div class="nav">
@@ -397,31 +407,8 @@ select.fctl option{background:var(--bg3)}
 </div>
 <div id="toast"></div>
 <script>
-// ── CORE FUNCTIONS (must be before HTML onclick handlers) ──────────
-const KEY="KEY_PLACEHOLDER";
-const $=id=>document.getElementById(id);
+// ── API and other functions ──────────────────────────────────────────────
 const api=(p,o={})=>fetch(p+(p.includes('?')?'&':'?')+'key='+KEY,o).then(r=>r.json());
-let dark=window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches;
-if(dark)document.body.classList.add('dark');
-function toggleDark(){dark=!dark;document.body.classList.toggle('dark',dark);}
-function go(t,el){
-  document.querySelectorAll('.section').forEach(s=>s.classList.remove('on'));
-  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));
-  $('s-'+t).classList.add('on');
-  if(el)el.classList.add('on');
-  if(t==='dash')loadDash();
-  else if(t==='tt')loadTT(0);
-  else if(t==='hw')loadHW();
-  else if(t==='exam'){loadExams();examSeg('list');}
-  else if(t==='stats')loadStats();
-  else if(t==='rec')loadRecList();
-  else if(t==='ai'){loadPriorities();}
-}
-function goB(t,el){
-  document.querySelectorAll('.bt').forEach(b=>b.classList.remove('on'));
-  el.classList.add('on');
-  go(t,null);
-}
 function examSeg(v){
   $('seg-list').classList.toggle('on',v==='list');
   $('seg-add').classList.toggle('on',v==='add');
