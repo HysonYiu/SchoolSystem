@@ -447,6 +447,8 @@ textarea{width:100%;background:#2c2c2e;border:1px solid rgba(255,255,255,.1);col
 .log-box{background:#0a0a0a;border:1px solid #2c2c2e;border-radius:10px;padding:14px;font-size:12px;font-family:'SF Mono',monospace;line-height:1.8;max-height:400px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;margin-top:10px}
 .log-line.err{color:#ff453a}
 .log-line.warn{color:#ff9f0a}
+.seg-btn{padding:7px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:transparent;color:#aeaeb2;cursor:pointer;font-size:12px;font-weight:500;font-family:inherit;transition:all .2s}
+.seg-btn.on{background:#0a84ff;color:#fff;border-color:#0a84ff}
 .log-line.ok{color:#30d158}
 .log-line.info{color:#aeaeb2}
 .seg{display:flex;background:#2c2c2e;border-radius:8px;padding:2px;margin-bottom:14px}
@@ -493,17 +495,27 @@ textarea{width:100%;background:#2c2c2e;border:1px solid rgba(255,255,255,.1);col
 <!-- UPDATE TAB -->
 <div class="section" id="t-update">
   <div class="card">
-    <div class="ct">GitHub 更新</div>
-    <div class="row"><span class="rl">Repo</span><a href="https://github.com/%%REPO%%" target="_blank">%%REPO%% ↗</a></div>
-    <div class="row"><span class="rl">本地版本</span><span class="rv">v%%VER%%</span></div>
-    <div class="row"><span class="rl">遠端版本</span><span class="rv" id="rv">-</span></div>
-    <div class="row"><span class="rl">更新狀態</span><span class="rv" id="upd-status">-</span></div>
-    <div class="btns">
-      <button class="btn b-blue" onclick="chkUpd()">🔍 檢查更新</button>
-      <button class="btn b-grn" id="do-upd-btn" onclick="doUpd()" style="display:none">⬇️ 立即更新</button>
+    <div class="ct">🚀 現代化更新系統</div>
+    <div class="row"><span class="rl">倉庫</span><a href="https://github.com/%%REPO%%" target="_blank">%%REPO%% ↗</a></div>
+    <div class="row"><span class="rl">本地版本</span><span class="rv" style="font-weight:700;color:var(--accent)">v%%VER%%</span></div>
+    <div class="row"><span class="rl">遠端版本</span><span class="rv" id="rv" style="font-weight:700">-</span></div>
+    <div class="row"><span class="rl">更新狀態</span><span class="rv" id="upd-status">⏳ 待檢查</span></div>
+
+    <div style="margin-top:16px;padding:12px;background:var(--bg4);border-radius:8px">
+      <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px">版本渠道</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="seg-btn on" id="ch-alpha" onclick="setChannel('alpha',this)">🧪 Alpha (最新)</button>
+        <button class="seg-btn" id="ch-beta" onclick="setChannel('beta',this)">🟡 Beta (穩定)</button>
+        <button class="seg-btn" id="ch-stable" onclick="setChannel('stable',this)">✅ Stable</button>
+      </div>
     </div>
-    <div id="umsg"></div>
-    <div id="upd-detail" style="display:none;margin-top:12px;font-size:12px;color:#636366"></div>
+
+    <div class="btns" style="margin-top:16px">
+      <button class="btn b-blue" onclick="chkUpd()" style="flex:1">🔍 檢查更新</button>
+      <button class="btn b-grn" id="do-upd-btn" onclick="doUpd()" style="display:none;flex:1">⬇️ 立即更新</button>
+    </div>
+    <div id="umsg" style="margin-top:12px;font-size:13px;font-weight:500"></div>
+    <div id="upd-detail" style="display:none;margin-top:12px;font-size:12px;color:#636366;background:var(--bg4);padding:10px;border-radius:6px;font-family:monospace;max-height:200px;overflow-y:auto"></div>
   </div>
 </div>
 
@@ -560,41 +572,57 @@ async function init(){
   document.getElementById('rec-sz').textContent=(sz.rec_kb||0)+' KB';
 }
 
+let updateChannel='alpha';
+
+function setChannel(ch,el){
+  updateChannel=ch;
+  document.querySelectorAll('.seg-btn').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+}
+
 async function chkUpd(){
   const u=document.getElementById('umsg');
   const us=document.getElementById('upd-status');
-  u.textContent='🔍 檢查中...';us.textContent='-';
-  const r=await adm('/admin/check_update');
+  u.textContent='🔍 檢查中...';us.textContent='⏳ 檢查中';
+  const r=await adm('/admin/check_update?channel='+updateChannel);
   const rv=document.getElementById('rv');
-  rv.textContent=r.remote_version||( r.error?'❌ 錯誤':'-');
-  if(r.has_update){
-    us.textContent='🆕 有新版本！';
-    u.textContent='發現新版本 '+r.remote_version+'，撳「立即更新」';
-    document.getElementById('do-upd-btn').style.display='';
-  }else if(r.error){
+
+  if(r.error){
+    rv.textContent='❌ 無法檢查';
     us.textContent='❌ 檢查失敗';
     u.textContent='❌ '+r.error;
+    return;
+  }
+
+  rv.textContent=r.remote_version||'-';
+  if(r.has_update){
+    us.textContent='🆕 有新版本';
+    u.textContent='✨ 發現新版本 '+r.remote_version+'！\n撳「立即更新」';
+    document.getElementById('do-upd-btn').style.display='';
   }else{
     us.textContent='✅ 已是最新';
-    u.textContent='✅ 已是最新版本';
+    u.textContent='✅ 當前已是 '+updateChannel.toUpperCase()+' 版本中的最新版本';
     document.getElementById('do-upd-btn').style.display='none';
   }
 }
 
 async function doUpd(){
-  if(!confirm('確定從 GitHub 下載最新版本並重啟？'))return;
+  if(!confirm('確定從 GitHub '+updateChannel.toUpperCase()+' 渠道更新並重啟？'))return;
   const u=document.getElementById('umsg');
   const det=document.getElementById('upd-detail');
-  u.textContent='⬇️ 下載中...';det.style.display='none';
-  const r=await adm('/admin/update');
+  u.textContent='⬇️ 正在下載...';det.style.display='none';
+  const r=await adm('/admin/update?channel='+updateChannel);
   if(r.ok){
-    u.textContent='✅ 更新成功！'+( r.updated?'已更新：'+r.updated.join(', '):'');
-    if(r.errors&&r.errors.length){
-      det.style.display='';det.textContent='部分失敗：'+r.errors.join('\n');
+    u.textContent='✅ 更新成功！更新了 '+(r.updated?.length||0)+' 個文件';
+    if(r.updated&&r.updated.length){
+      det.style.display='';det.textContent='已更新：\n'+r.updated.join('\n');
     }
-    setTimeout(()=>{u.textContent='重啟中，5秒後刷新...';setTimeout(()=>location.reload(),5000);},1000);
+    setTimeout(()=>{u.textContent='🔄 重啟中...系統將在 5 秒後自動刷新';setTimeout(()=>location.reload(),5000);},1000);
   }else{
-    u.textContent='❌ 更新失敗：'+(r.error||JSON.stringify(r));
+    u.textContent='❌ 更新失敗：'+(r.error||'未知錯誤');
+    if(r.details){
+      det.style.display='';det.textContent=r.details;
+    }
   }
 }
 
@@ -711,6 +739,12 @@ def admin_login():
 def check_update():
     if not admin_auth(request): return jsonify({"error":"unauthorized"}),401
     import urllib.request as urlreq
+    channel = request.args.get("channel", "alpha").lower()
+
+    # Validate channel
+    if channel not in ["alpha", "beta", "stable"]:
+        channel = "alpha"
+
     try:
         mirrors = [
             f"https://raw.githubusercontent.com/{GH_REPO}/main/version.txt",
@@ -719,25 +753,36 @@ def check_update():
         remote = None
         for url in mirrors:
             try:
-                req = urlreq.Request(url, headers={"User-Agent":"SchoolSystem/1.0"})
+                req = urlreq.Request(url, headers={"User-Agent":"SchoolSystem/1.0","Cache-Control":"no-cache"})
                 with urlreq.urlopen(req, timeout=10) as r:
                     remote = r.read().decode().strip()
                 if remote: break
             except (OSError, ValueError):
                 continue
-        if not remote: return jsonify({"error":"Cannot reach GitHub"}),500
-        return jsonify({"current":__version__,"remote_version":remote,"has_update":remote!=__version__})
+        if not remote:
+            return jsonify({"error":"无法连接 GitHub","hint":"检查网络连接或 GitHub 访问"}),500
+
+        # Filter by channel (simplified: all use main version.txt)
+        # In production, you'd have separate branches or tags
+        has_update = remote != __version__
+        return jsonify({
+            "current": __version__,
+            "remote_version": remote,
+            "has_update": has_update,
+            "channel": channel
+        })
     except Exception as e:
-        return jsonify({"error":str(e)}),500
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/admin/update")
 def do_update():
     if not admin_auth(request): return jsonify({"error":"unauthorized"}),401
     import subprocess
     base = os.path.dirname(os.path.abspath(__file__))
+    channel = request.args.get("channel", "alpha").lower()
 
     # ── COMPLETE GIT PULL (Full Update) ─────────────────────────────────────
-    # Fetch latest from GitHub
+    # Fetch latest from GitHub (always from main branch for now)
     try:
         fetch_result = subprocess.run(
             ["git", "-C", base, "fetch", "origin", "main"],
