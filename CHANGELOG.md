@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.0.0-alpha.10] - 2026-03-19 🧪 ALPHA
+### 新增
+- ⚡ **Wake-On-LAN (WOL) 整合** - 支援 ESP8266 遠程喚醒 PC
+  - Admin Panel 快速操作按鈕 (⚡ 開機 PC)
+  - HTTP API 端點 `/admin/wol`
+  - 設定 `ESP8266_IP` 環境變數
+  - JavaScript 前端集成，實時反饋
+
+### 技術細節
+- 透過 ESP8266 HTTP 服務轉發 Magic Packet
+- 支援 UDP 廣播喚醒 (Port 9)
+- Admin 認證保護，防止濫用
+
+---
+
 ## [2.0.0-alpha.1] - 2026-03-18 🧪 ALPHA
 ### ⚠️ Alpha Release — 測試版本，可能有 Bug
 
