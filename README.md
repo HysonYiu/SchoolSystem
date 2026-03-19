@@ -2,7 +2,7 @@
 
 > 個人學習管理系統 — 專為香港 DSE 學生設計
 
-![Version](https://img.shields.io/badge/version-2.0.0--alpha.9-5856d6)
+![Version](https://img.shields.io/badge/version-2.0.0--alpha.10-5856d6)
 ![Python](https://img.shields.io/badge/python-3.10+-blue)
 ![Flask](https://img.shields.io/badge/flask-3.1-lightgrey)
 ![Discord](https://img.shields.io/badge/discord.py-2.4-5865f2)
@@ -89,6 +89,8 @@ python main.py
 | 📊 [項目管理指南](PROJECT_MANAGEMENT.md) | GitHub 工作流、Issue/PR 流程 |
 | 🏗️ [系統架構](docs/ARCHITECTURE.md) | 高層設計、模塊說明、數據流 |
 | 🔌 [API 參考](docs/API.md) | 完整 REST API 端點、請求/響應示例 |
+| ⚡ [WOL 集成指南](docs/WOL_INTEGRATION.md) | ESP8266 Wake-On-LAN 完整設置 |
+| 🪟 [Windows 部署指南](DEPLOYMENT_WINDOWS.md) | PC 本地部署、啟動腳本、自動啟動 |
 | 👨‍💻 [開發指南](docs/DEVELOPMENT.md) | 本地開發設置、代碼風格、測試指南 |
 | 🤝 [貢獻指南](CONTRIBUTING.md) | PR 流程、代碼規範、報告 Bug |
 | 📜 [行為準則](CODE_OF_CONDUCT.md) | 社區指南、行為標準 |
@@ -219,13 +221,16 @@ pytest tests/ -v --cov=.
 
 ## 📊 項目狀態
 
-### 最新版本：2.0.0-alpha.1
+### 最新版本：2.0.0-alpha.10-hotfix.1
 
 | 組件 | 狀態 | 說明 |
 |------|------|------|
 | 核心功能 | ✅ 完成 | 功課、時間表、考試管理 |
 | Discord Bot | ✅ 完成 | 所有 Slash Commands |
 | AI 助手 | ✅ 完成 | DeepSeek 整合 |
+| Wake-On-LAN | ✅ 完成 | ESP8266 遠程開機 |
+| 完整更新系統 | ✅ 完成 | Git Reset 一鍵完整更新 |
+| Windows 部署 | ✅ 完成 | run.bat 後台運行 |
 | 標準化 | ✅ 完成 | 依賴管理、代碼風格、CI/CD |
 | 文檔 | ✅ 完成 | API、架構、開發指南 |
 | 測試 | 🟨 進行中 | 基礎框架完成，需增加覆蓋率 |
@@ -275,10 +280,11 @@ pkill -f "python main.py" && nohup bash start.sh > /dev/null 2>&1 &
 
 | 版本 | 日期 | 亮點 |
 |------|------|------|
-| v2.0.0 (alpha) | 2025-03 | 項目標準化、完整文檔、測試框架 |
-| v1.3.8 | 2025-02 | Watchdog 自動重啟 |
-| v1.3.0 | 2025-01 | AI Agent 架構 |
-| v1.0.0 | 2024-12 | MVP 發佈 |
+| v2.0.0-alpha.10 | 2026-03 | WOL 整合、完整更新、Windows 部署、前端修復 |
+| v2.0.0-alpha.1 | 2026-03 | 項目標準化、完整文檔、測試框架 |
+| v1.3.8 | 2026-03 | Watchdog 自動重啟 |
+| v1.3.0 | 2026-03 | AI Agent 架構 |
+| v1.0.0 | 2026-03 | MVP 發佈 |
 
 ---
 
