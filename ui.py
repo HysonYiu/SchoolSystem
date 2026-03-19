@@ -156,6 +156,14 @@ if(dark)document.body.classList.add('dark');
 function toggleDark(){dark=!dark;document.body.classList.toggle('dark',dark);}
 function go(t,el){document.querySelectorAll('.section').forEach(s=>s.classList.remove('on'));document.querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));$('s-'+t).classList.add('on');if(el)el.classList.add('on');if(t==='dash')loadDash();else if(t==='tt')loadTT(0);else if(t==='hw')loadHW();else if(t==='exam'){loadExams();examSeg('list');}else if(t==='stats')loadStats();else if(t==='rec')loadRecList();else if(t==='ai'){loadPriorities();}}
 function goB(t,el){document.querySelectorAll('.bt').forEach(b=>b.classList.remove('on'));el.classList.add('on');go(t,null);}
+
+// Global error handler - display errors to user
+window.addEventListener('error',e=>{
+  const msg='❌ JavaScript Error: '+e.message;
+  const toast=$('toast');
+  if(toast){toast.textContent=msg;toast.classList.add('on');setTimeout(()=>toast.classList.remove('on'),5000);}
+  console.error('Caught error:',e.error);
+});
 </script>
 </head>
 <body>
