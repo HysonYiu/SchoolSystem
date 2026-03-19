@@ -746,16 +746,27 @@ def check_update():
         channel = "alpha"
 
     try:
+        import time, base64, json
         mirrors = [
-            f"https://raw.githubusercontent.com/{GH_REPO}/main/version.txt",
+            f"https://api.github.com/repos/{GH_REPO}/contents/version.txt?ref=main",
+            f"https://raw.githubusercontent.com/{GH_REPO}/main/version.txt?t={int(time.time())}",
             f"https://cdn.jsdelivr.net/gh/{GH_REPO}@main/version.txt",
         ]
         remote = None
         for url in mirrors:
             try:
-                req = urlreq.Request(url, headers={"User-Agent":"SchoolSystem/1.0","Cache-Control":"no-cache"})
+                req = urlreq.Request(url, headers={"User-Agent":"SchoolSystem/1.0","Cache-Control":"no-cache,no-store,must-revalidate","Pragma":"no-cache"})
                 with urlreq.urlopen(req, timeout=10) as r:
-                    remote = r.read().decode().strip()
+                    content = r.read().decode().strip()
+                    # Handle GitHub API JSON response
+                    if "api.github.com" in url:
+                        try:
+                            data = json.loads(content)
+                            remote = base64.b64decode(data.get("content","")).decode().strip()
+                        except:
+                            continue
+                    else:
+                        remote = content
                 if remote: break
             except (OSError, ValueError):
                 continue
