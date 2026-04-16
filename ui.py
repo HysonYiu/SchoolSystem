@@ -154,7 +154,7 @@ const $=id=>document.getElementById(id);
 let dark=window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches;
 if(dark)document.body.classList.add('dark');
 function toggleDark(){dark=!dark;document.body.classList.toggle('dark',dark);}
-function go(t,el){document.querySelectorAll('.section').forEach(s=>s.classList.remove('on'));document.querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));const s=$('s-'+t);if(s)s.classList.add('on');if(el)el.classList.add('on');setTimeout(()=>{if(t==='dash')loadDash?.();else if(t==='tt')loadTT?.(0);else if(t==='hw')loadHW?.();else if(t==='exam'){loadExams?.();examSeg?.('list');}else if(t==='stats')loadStats?.();else if(t==='rec')loadRecList?.();else if(t==='ai')loadPriorities?.();})}
+function go(t,el){document.querySelectorAll('.section').forEach(s=>s.classList.remove('on'));document.querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));const s=$('s-'+t);if(s)s.classList.add('on');if(el)el.classList.add('on');setTimeout(()=>{if(t==='dash')loadDash?.();else if(t==='tt')loadTT?.(0);else if(t==='hw')loadHW?.();else if(t==='exam'){loadExams?.();examSeg?.('list');}else if(t==='stats')loadStats?.();else if(t==='rec')loadRecList?.();else if(t==='ai')loadPriorities?.();});}
 function goB(t,el){document.querySelectorAll('.bt').forEach(b=>b.classList.remove('on'));el.classList.add('on');go(t,null);}
 
 // Global error handler - display errors to user

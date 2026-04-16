@@ -14,6 +14,7 @@ load_dotenv()
 __version__ = "2.0.0-alpha.12"
 
 app = Flask(__name__)
+app.debug = True  # Enable debug mode for auto-reload
 app.config["MAX_CONTENT_LENGTH"] = 100 * 1024 * 1024  # 100 MB for audio uploads
 
 SECRET_KEY   = os.getenv("SECRET_KEY", "changeme")
