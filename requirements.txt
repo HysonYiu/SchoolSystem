@@ -1,5 +1,5 @@
 Flask==3.1.0
 discord.py==2.4.0
-python-dotenv==1.0.0
+python-dotenv==1.2.2
 requests==2.31.0
 # Poe uses OpenAI-compatible API (no extra package needed, using urllib)
